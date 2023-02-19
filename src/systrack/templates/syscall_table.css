@@ -1,0 +1,103 @@
+:root {
+	--main-bg: white;
+	--main-fg: black;
+	--table-fg: black;
+	--table-bg: white;
+	--table-head-bg: #d7efff;
+	--table-head-bg-hover: #93d4ff;
+	--table-row-bg-hover: #c5ffdf;
+	--table-border: 1px solid #d0d0d0;
+	--link-fg: #00319f;
+	--link-fg-visited: #7f009f;
+}
+
+body {
+	font-family: consolas, monospace;
+	font-size: 12px;
+	color: var(--main-fg);
+	background-color: var(--main-bg);
+}
+
+a, a:visited {
+	color: var(--main-fg);
+}
+
+table {
+	padding: 5px;
+	color: var(--table-fg);
+	border: var(--table-border);
+	border-collapse: collapse;
+}
+
+table th {
+	top: 0;
+	position: sticky;
+	text-align: left;
+	padding: 5px;
+	border: var(--table-border);
+	background-color: var(--table-head-bg);
+}
+
+table th.sortable {
+	cursor: pointer;
+}
+
+table th.ascending::before {
+	content: '⬇️\a0';
+}
+
+table th.descending::before {
+	content: '⬆️\a0';
+}
+
+table tr.highlight td {
+	background-color: var(--table-row-bg-hover);
+}
+
+table td {
+	text-align: left;
+	padding: 3px 5px 3px;
+	border: var(--table-border);
+	background-color: var(--table-bg);
+}
+
+table td.esoteric::after {
+	content: ' 🧪';
+}
+
+table td.bad::after {
+	content: ' ⚠️';
+}
+
+table td.unknown {
+	font-family: sans-serif;
+	font-style: italic;
+}
+
+table a {
+	color: var(--link-fg);
+	text-decoration: none;
+}
+
+table a:visited {
+	color: var(--link-fg-visited);
+}
+
+table span.argtype {
+	color: #006e8f;
+}
+
+@media (any-hover: hover) {
+	table th.sortable:hover {
+		cursor: pointer;
+		background-color: var(--table-head-bg-hover);
+	}
+
+	table tr:hover td {
+		background-color: var(--table-row-bg-hover);
+	}
+
+	table a:hover {
+		text-decoration: underline;
+	}
+}

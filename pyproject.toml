@@ -1,0 +1,55 @@
+[project]
+name = 'systrack'
+description = 'Linux kernel syscall implementation tracker'
+authors = [{name = 'Marco Bonelli', email = 'marco@mebeim.net'}]
+maintainers = [{name = 'Marco Bonelli', email = 'marco@mebeim.net'}]
+license = {file = 'LICENSE'}
+readme = 'README.md'
+platforms = 'any'
+python_requires = '>=3.6'
+dynamic = ['version']
+keywords = ['systrack', 'linux', 'kernel', 'syscall', 'kconfig', 'elf', 'abi']
+classifiers = [
+	'Development Status :: 4 - Beta',
+	'Environment :: Console',
+	'Intended Audience :: Developers',
+	'Intended Audience :: Science/Research',
+	'Intended Audience :: System Administrators',
+	'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
+	'Natural Language :: English',
+	'Operating System :: OS Independent',
+	'Programming Language :: Python :: 3',
+	'Topic :: Security',
+	'Topic :: Software Development :: Embedded Systems',
+	'Topic :: Software Development :: Testing',
+	'Topic :: System :: Operating System Kernels :: Linux',
+	'Topic :: Utilities',
+]
+
+[project.urls]
+homepage = 'https://github.com/mebeim/systrack.git'
+repository = 'https://github.com/mebeim/systrack.git'
+
+[project.scripts]
+systrack = 'systrack:main'
+
+[project.optional-dependencies]
+full = ['jinja2']
+html = ['jinja2']
+
+[build-system]
+requires = ['hatchling']
+build-backend = 'hatchling.build'
+
+[tool.hatch.version]
+path = 'src/systrack/version.py'
+
+[tool.hatch.build]
+ignore-vcs = true
+include = ['src/systrack/templates/*']
+
+[tool.hatch.build.targets.wheel]
+packages = ['src/systrack']
+
+[tool.hatch.build.targets.sdist]
+include = ['src', 'bin']
