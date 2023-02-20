@@ -145,6 +145,6 @@ class ELF:
 		return self.file.read(size)
 
 	def read_symbol(self, sym: Union[str,Symbol]) -> bytes:
-		if type(sym) is str:
+		if not isinstance(sym, Symbol):
 			sym = self.symbols[sym]
 		return self.vaddr_read(sym.vaddr, sym.size)

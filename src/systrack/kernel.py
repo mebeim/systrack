@@ -9,7 +9,7 @@ from os import sched_getaffinity
 from operator import itemgetter, attrgetter
 from collections import defaultdict, Counter
 from itertools import zip_longest
-from typing import Tuple, List, Iterator, Union
+from typing import Tuple, List, Iterator, Union, Any
 
 from .elf import ELF
 from .arch import Arch
@@ -85,11 +85,20 @@ class Kernel:
 		if isinstance(banner, bytes):
 			banner = banner.decode()
 
-		assert banner.startswith('Linux version ')
+		if not banner.startswith('Linux version '):
+			return None
 		return Kernel.version_from_str(banner[14:])
 
 	def __version_from_vmlinux(self) -> Tuple[int,int,int]:
-		banner = self.vmlinux.read_symbol('linux_banner')
+		banner = self.vmlinux.symbols.get('linux_banner')
+		if banner is None:
+			return None
+
+		if banner.size:
+			banner = self.vmlinux.read_symbol(banner)
+		else:
+			banner = self.vmlinux.vaddr_read_string(banner.vaddr)
+
 		return self.version_from_banner(banner)
 
 	def __version_from_make(self) -> Tuple[int,int,int]:
@@ -103,11 +112,13 @@ class Kernel:
 				self.__version = self.__version_from_vmlinux()
 				self.__version_source = 'vmlinux banner'
 			elif self.kdir:
+				# This could in theory be tried even if __version_from_vmlinux()
+				# fails... but if that fails there are probably bigger problems.
 				self.__version = self.__version_from_make()
 				self.__version_source = 'make'
-			else:
-				raise KernelVersionError('unable to determine kernel version')
 
+		if self.__version is None:
+			raise KernelVersionError('unable to determine kernel version')
 		return self.__version
 
 	@property
@@ -130,17 +141,20 @@ class Kernel:
 	def __rel(self, path: Path) -> Path:
 		return maybe_rel(path, self.kdir)
 
-	def __iter_unpack_vmlinux(self, off: int, size: int = None) -> Iterator[bytes]:
-		fmt = '<>'[self.vmlinux.big_endian] + 'QL'[self.vmlinux.bits32]
+	def __iter_unpack_vmlinux(self, fmt: str, off: int, size: int = None) -> Iterator[Tuple[Any, ...]]:
+		fmt = '<>'[self.vmlinux.big_endian] + fmt
 		f = self.vmlinux.file
 		assert f.seek(off) == off
 
 		if size is None:
-			chunk_size = 4 if self.vmlinux.bits32 else 8
+			chunk_size = struct.calcsize(fmt)
 			while 1:
-				yield struct.unpack(fmt, f.read(chunk_size))[0]
+				yield struct.unpack(fmt, f.read(chunk_size))
 		else:
-			yield from map(itemgetter(0), struct.iter_unpack(fmt, f.read(size)))
+			yield from struct.iter_unpack(fmt, f.read(size))
+
+	def __iter_unpack_vmlinux_long(self, off: int, size: int = None) -> Iterator[int]:
+		yield from map(itemgetter(0), self.__iter_unpack_vmlinux('QL'[self.vmlinux.bits32], off, size))
 
 	def __extract_syscalls(self) -> List[Syscall]:
 		if self.arch.bits32 != self.vmlinux.bits32:
@@ -183,7 +197,7 @@ class Kernel:
 			logging.info('Syscall table (%s) is %d bytes, %d entries', tbl.name,
 				tbl.size, tbl.size // addr_size)
 
-			vaddrs = list(self.__iter_unpack_vmlinux(tbl_file_off, tbl.size))
+			vaddrs = list(self.__iter_unpack_vmlinux_long(tbl_file_off, tbl.size))
 
 			# Sanity check: ensure all virtual addresses are within .text
 			for idx, vaddr in enumerate(vaddrs):
@@ -199,7 +213,7 @@ class Kernel:
 				'to figure out when to stop', syscall_table_name, tbl.size)
 
 			vaddrs = []
-			for vaddr in self.__iter_unpack_vmlinux(tbl_file_off):
+			for vaddr in self.__iter_unpack_vmlinux_long(tbl_file_off):
 				if not (text_vstart <= vaddr < text_vend):
 					break
 
