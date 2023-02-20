@@ -28,6 +28,9 @@ class KernelVersionError(RuntimeError):
 class KernelArchError(RuntimeError):
 	pass
 
+class KernelWithoutSymbolsError(RuntimeError):
+	pass
+
 class KernelMultiABIError(RuntimeError):
 	pass
 
@@ -43,7 +46,6 @@ class Kernel:
 			toolchain_prefix: str = None):
 		if not kdir and not vmlinux:
 			raise ValueError('at least one of vmlinux or kdir is needed')
-
 		if arch_name is None and vmlinux is None:
 			raise ValueError('need vmlinux to determine arch if not supplied')
 
@@ -53,6 +55,9 @@ class Kernel:
 		self.vmlinux          = ELF(vmlinux) if vmlinux else None
 		self.arch_name        = arch_name
 		self.toolchain_prefix = toolchain_prefix
+
+		if self.vmlinux and not self.vmlinux.symbols:
+			raise KernelWithoutSymbolsError('Provided vmlinux ELF has no symbols')
 
 		if self.arch_name is None:
 			m = Arch.match(self.vmlinux)

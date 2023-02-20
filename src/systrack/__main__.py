@@ -11,7 +11,7 @@ from textwrap import indent, TextWrapper
 from collections import namedtuple, defaultdict, Counter
 
 from .version import VERSION_HELP
-from .kernel import Kernel, KernelVersionError, KernelArchError, KernelMultiABIError
+from .kernel import Kernel, KernelVersionError, KernelArchError, KernelWithoutSymbolsError, KernelMultiABIError
 from .utils import eprint, ensure_command, enable_high_verbosity, enable_silent
 from .utils import command_available, gcc_version, maybe_rel, format_duration
 from .arch import SUPPORTED_ARCHS, SUPPORTED_ARCHS_HELP
@@ -124,6 +124,10 @@ def instantiate_kernel(*a, **kwa) -> Kernel:
 		eprint(str(e))
 		eprint(f"See '{sys.argv[0]} --arch help' for more information")
 		sys.exit(1)
+	except KernelWithoutSymbolsError:
+		eprint('The provided kernel image has no symbols, which are necessary for Systrack to work.')
+		eprint('You can try unstripping the image with tools such as "vmlinux-to-elf".')
+		sys.exit(1)
 	except KernelMultiABIError as e:
 		arch_class, abis = e.args[1:]
 		eprint(f'Detected architecture: {arch_class.name}.')
@@ -235,7 +239,7 @@ def main() -> int:
 		return 1
 
 	if not command_available('readelf'):
-		eprint(f'Command "readelf" unavailable, can\'t much without it!')
+		eprint(f'Command "readelf" unavailable, can\'t do much without it!')
 		return 127
 
 	kernel = instantiate_kernel(arch_name, vmlinux, kdir, outdir, rdir)
