@@ -115,7 +115,7 @@ class Kernel:
 		if self.__version is None:
 			if self.vmlinux:
 				self.__version = self.__version_from_vmlinux()
-				self.__version_source = 'vmlinux banner'
+				self.__version_source = 'vmlinux'
 			elif self.kdir:
 				# This could in theory be tried even if __version_from_vmlinux()
 				# fails... but if that fails there are probably bigger problems.
@@ -136,6 +136,12 @@ class Kernel:
 		if c == 0:
 			return f'v{a}.{b}'
 		return f'v{a}.{b}.{c}'
+
+	@property
+	def version_source(self) -> str:
+		if self.__version_source or self.version:
+			return self.__version_source
+		return None
 
 	@property
 	def can_extract_location_info(self):

@@ -178,6 +178,9 @@ def command_available(name: str) -> bool:
 def gcc_version(gcc_cmd: str) -> str:
 	return ensure_command((gcc_cmd, '--version')).splitlines()[0].strip()
 
+def git_checkout(repo_dir: Union[Path,str], ref: str):
+	ensure_command(('git', 'checkout', ref), cwd=repo_dir, capture_stdout=False)
+
 def format_duration(s: float) -> str:
 	s = round(s)
 	h = s // 3600

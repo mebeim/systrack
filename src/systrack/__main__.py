@@ -13,7 +13,7 @@ from collections import namedtuple, defaultdict, Counter
 from .version import VERSION_HELP
 from .kernel import Kernel, KernelVersionError, KernelArchError, KernelWithoutSymbolsError, KernelMultiABIError
 from .utils import eprint, ensure_command, enable_high_verbosity, enable_silent
-from .utils import command_available, gcc_version, maybe_rel, format_duration
+from .utils import command_available, gcc_version, git_checkout, maybe_rel, format_duration
 from .arch import SUPPORTED_ARCHS, SUPPORTED_ARCHS_HELP
 from .output import output_syscalls
 
@@ -57,7 +57,9 @@ def parse_args():
 			'debug information; needed if the kernel was built with ORIG_KDIR '
 			'as source directory instead of KDIR'))
 	ap.add_argument('--checkout', metavar='REF',
-		help=wrap_help('git checkout to REF inside KDIR before doing anything'))
+		help=wrap_help('git checkout to REF inside KDIR before doing anything; '
+			'the special value "auto" can be used to checkout to the tag '
+			'corresponding to the detected kernel version from VMLINUX'))
 	ap.add_argument('--disable-opt', action='store_true',
 		help=wrap_help('try building kernel with reduces/disabled optimization '
 		'for more reliable location results; only meaningful with -b'))
@@ -175,9 +177,10 @@ def main() -> int:
 			eprint(SUPPORTED_ARCHS_HELP)
 			return 0
 
-	if args.checkout:
+	# Checkout before building only if not set to auto
+	if args.checkout and args.checkout != 'auto':
 		eprint('Checking out to', args.checkout)
-		ensure_command(('git', 'checkout', args.checkout), cwd=args.kdir, capture_stdout=False)
+		git_checkout(kdir, args.checkout)
 
 	if args.clean or args.config or args.build:
 		if args.out:
@@ -230,6 +233,12 @@ def main() -> int:
 
 		return 0
 
+	# Auto-checkout to the correct tag is only possible if we already have a
+	# vmlinux to extract the version from
+	if args.checkout == 'auto' and not vmlinux:
+		eprint('Cannot perform auto-checkout without a vmlinux image!')
+		return 1
+
 	if not vmlinux:
 		vmlinux = kdir / 'vmlinux'
 
@@ -244,6 +253,11 @@ def main() -> int:
 
 	kernel = instantiate_kernel(arch_name, vmlinux, kdir, outdir, rdir)
 	eprint('Detected kernel version:', kernel.version_str)
+
+	if args.checkout == 'auto':
+		assert kernel.version_source == 'vmlinux'
+		eprint('Checking out to', kernel.version_tag)
+		git_checkout(kdir, kernel.version_tag)
 
 	if not kernel.syscalls:
 		return 1
