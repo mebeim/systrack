@@ -90,6 +90,9 @@ def extract_syscall_signatures(syscalls: List[Syscall], vmlinux: ELF, have_sourc
 	have_syscall_metadata = '__start_syscalls_metadata' in vmlinux.symbols
 	all_from_ftrace = False
 
+	# TODO: we could also extract signatures from DWARF or BTF even if we have
+	# no ftrace metadata and no KDIR. How?
+
 	# First extract signatures from ftrace metadata. If the kernel was compiled
 	# with CONFIG_FTRACE_SYSCALLS=y we have signature information available in a
 	# bunch of `struct syscall_metadata` objects.
@@ -107,7 +110,7 @@ def extract_syscall_signatures(syscalls: List[Syscall], vmlinux: ELF, have_sourc
 
 		# Sanity check
 		open_meta = vmlinux.symbols.get('__syscall_meta__open')
-		if open_meta:
+		if open_meta and open_meta.size:
 			assert open_meta.size >= meta_sz
 
 		for ptr in ptrs:

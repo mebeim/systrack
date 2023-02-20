@@ -266,13 +266,10 @@ def main() -> int:
 
 	eprint('Found', len(syscalls), 'implemented syscalls')
 
-	if kdir is None:
-		logging.warning('Location and signature information may be inaccurate since no KDIR was supplied')
-	else:
-		if n_no_loc:
-			eprint('Could not find location for', n_no_loc, 'syscall' + ('s' if n_no_loc > 1 else ''))
-		if n_no_sig:
-			eprint('Could not extract signature for', n_no_sig, 'syscall' + ('s' if n_no_sig > 1 else ''))
+	if n_no_loc:
+		eprint('Could not find location for', n_no_loc, 'syscall' + ('s' if n_no_loc > 1 else ''))
+	if n_no_sig:
+		eprint('Could not extract signature for', n_no_sig, 'syscall' + ('s' if n_no_sig > 1 else ''))
 
 	eprint()
 	output_syscalls(kernel, args.format)

@@ -163,12 +163,15 @@ def extract_syscall_locations(syscalls: List[Syscall], vmlinux: ELF, kdir: Path,
 	locs = addr2line(vmlinux, map(lambda s: s.symbol.vaddr, syscalls))
 
 	if not kdir:
-		logging.info('No kernel source available, trusting addr2line output for location info')
-
 		for sc, (file, line) in zip(syscalls, locs):
 			sc.file = Path(file) if file != '??' else None
 			sc.line = int(line) if line.isdigit() else None
 			sc.good_location = False
+
+		if any(map(attrgetter('file'), syscalls)):
+			logging.warning('No kernel source available, trusting addr2line output for location info')
+		else:
+			logging.info('No kernel source available and no addr2line output, cannot extract location info')
 
 		return
 

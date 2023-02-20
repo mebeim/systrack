@@ -133,6 +133,17 @@ class Kernel:
 		return f'v{a}.{b}.{c}'
 
 	@property
+	def can_extract_location_info(self):
+		return self.vmlinux.has_debug_info
+
+	@property
+	def can_extract_signature_info(self):
+		return (
+			'__start_syscalls_metadata' in vmlinux.symbols
+			or self.vmlinux.has_debug_info
+		)
+
+	@property
 	def syscalls(self) -> List[Syscall]:
 		if self.__syscalls is None:
 			self.__syscalls = self.__extract_syscalls()
@@ -355,28 +366,14 @@ class Kernel:
 
 		assert len(syscalls) == len(vaddrs) - ni_total - n_skipped + n_esoteric
 
-		if not self.vmlinux.has_debug_info:
-			# Cannot extract location info without debug info.
-			#
-			# NOTE: unless we check sources, we can have have false positives
-			# here! Syscalls that are not implemented but for which symbols are
-			# present and don't point to sys_ni_syscall (i.e. just return
-			# -ENOSYS by theirselves), like the infamous lookup_dcookie on
-			# x86/arm64. Annoying! Arch.is_dummy_syscall() could have already
-			# filtered those out, but it's not guaranteed to catch everything.
-			#
-			logging.info('No debug information available, skipping location info extraction')
-			return syscalls
-
 		# Find locations and signatures for all the syscalls we found (except
-		# esoteric ones). Warn for potentially bad matches and filter out
-		# invalid ones.
+		# esoteric ones).
 		extract_syscall_locations(syscalls, self.vmlinux, self.kdir, self.rdir, self.arch)
 		extract_syscall_signatures(syscalls, self.vmlinux, self.kdir is not None)
 
-		implemented = []
-		have_syscall_metadata = '__start_syscalls_metadata' in self.vmlinux.symbols
-		# Accumulate warnings/errors for prettier outout
+		# Extract only implemented syscalls, warn for potentially bad matches
+		# and filter out invalid ones.
+		implemented  = []
 		bad_loc_info = []
 		no_loc_info  = []
 		no_sig_info  = []
@@ -387,10 +384,15 @@ class Kernel:
 			if not good and not sc.esoteric:
 				# If we got to this point the location is still not "good",
 				# chances are that this syscall is just a dummy function that
-				# only does `return -ENOSYS`. If so, discard it.
+				# only does `return -ENOSYS`.
+				# We can filter those out on archs for which we have
+				# .is_dummy_syscall() implemented, but we're not guaranteed to
+				# catch everything. For example, .is_dummy_syscall() is useless
+				# if the symbol has bad/zero size. Unless we check sources, we
+				# can always have false positives even after this step.
 				code = self.vmlinux.read_symbol(sc.symbol)
 
-				if self.arch.is_dummy_syscall(code):
+				if code and self.arch.is_dummy_syscall(code):
 					logging.info('Syscall %s (%s) is not actually implemented, '
 						'machine code: %s', sc.name, sc.symbol.name, code.hex())
 					continue
@@ -419,10 +421,10 @@ class Kernel:
 
 					bad_loc_info.append((sc.name, sc.symbol.name, self.__rel(file), line, hint))
 
-			if file is None:
+			if file is None and self.can_extract_location_info:
 				no_loc_info.append((sc.name, sc.symbol.name))
 
-			if sc.signature is None and have_syscall_metadata:
+			if sc.signature is None and self.can_extract_signature_info:
 				no_sig_info.append((sc.name, sc.symbol.name))
 
 			implemented.append(sc)
