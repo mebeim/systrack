@@ -31,7 +31,7 @@ homepage = 'https://github.com/mebeim/systrack.git'
 repository = 'https://github.com/mebeim/systrack.git'
 
 [project.scripts]
-systrack = 'systrack:main'
+systrack = 'systrack.__main__:main'
 
 [project.optional-dependencies]
 full = ['jinja2']
@@ -52,4 +52,4 @@ include = ['src/systrack/templates/*']
 packages = ['src/systrack']
 
 [tool.hatch.build.targets.sdist]
-include = ['src', 'bin']
+include = ['src']
