@@ -8,10 +8,12 @@ function sortTable(e) {
 	const body   = rows[0].parentElement
 	let getValue
 
-	if (idx === 0)
+	if (idx === 0) {
 		getValue = el => parseInt(el.children[0].textContent, 16)
-	else
-		getValue = el => el.children[idx].textContent
+	} else {
+		// The "number" header spans two columns (for decimal and hexadecimal)
+		getValue = el => el.children[idx + 1].textContent
+	}
 
 	rows.forEach(el => body.removeChild(el))
 	rows.sort((a, b) => {
