@@ -10,15 +10,14 @@ from .utils import anyprefix, noprefix
 
 def expand_macros(sig: Iterable[str], big_endian: bool) -> Iterator[str]:
 	for field in sig:
-		for macro in 'arg_u32p(', 'compat_arg_u64_dual(', 'compat_arg_u64(':
-			if field.startswith(macro):
-				start = len(macro)
-		else:
+		newfield = noprefix(field, 'SC_ARG64(', 'arg_u32p(', 'compat_arg_u64_dual(', 'compat_arg_u64(')
+
+		if newfield == field:
 			yield field
 			continue
 
-		assert field[-1] == ')'
-		field = field[start:-1]
+		assert newfield[-1] == ')'
+		field = newfield[:-1]
 
 		if big_endian:
 			yield from ('u32', f'{field}_hi', 'u32', f'{field}_lo')
@@ -28,11 +27,12 @@ def expand_macros(sig: Iterable[str], big_endian: bool) -> Iterator[str]:
 def parse_signature(sig: str, big_endian: bool) -> Tuple[str, ...]:
 	split_sig = map(str.strip, sig.split(','))
 
+	# SC_ARG64 is standard for all archs
 	# arg_u32p is arm64-specific
 	# compat_arg_u64[_dual] is riscv-specific
-	if 'arg_u32p' not in sig and 'compat_arg_u64' not in sig:
+	if all(x not in sig for x in ('SC_ARG64', 'arg_u32p', 'compat_arg_u64')):
 		# Make sure it doesn't contain any other macros that we don't know about
-		assert '(' not in sig and ')' not in sig, f'Unexpected parentheses in signature: {file}:{line}'
+		assert '(' not in sig and ')' not in sig, f'Unexpected parentheses in signature: {sig!r}'
 		return tuple(split_sig)
 
 	return tuple(expand_macros(split_sig, big_endian))
@@ -53,8 +53,10 @@ def syscall_signature_from_source(file: Path, line: int, big_endian: bool) -> Tu
 	#     SYSCALL_DEFINEx(name, type1, arg1, type2, arg2, ...)
 	#     asmlinkage xxx sys_xxx(type1 arg1, type2 arg2, ...)
 
-	if anyprefix(sig, 'SYSCALL_DEFINE', 'COMPAT_SYSCALL_DEFINE'):
-		sig = noprefix(sig, 'SYSCALL_DEFINE', 'COMPAT_SYSCALL_DEFINE')
+	newsig = noprefix(sig, 'SYSCALL_DEFINE', 'SYSCALL32_DEFINE', 'COMPAT_SYSCALL_DEFINE', 'COMPAT_SYSCALL32_DEFINE')
+
+	if sig != newsig:
+		sig = newsig
 		start = sig.find(',') + 1
 		nargs = int(sig[0])
 		assert nargs <= 6, f'SYSCALL_DEFINE{nargs}? {file}:{line}'

@@ -150,7 +150,7 @@ class Kernel:
 	@property
 	def can_extract_signature_info(self):
 		return (
-			'__start_syscalls_metadata' in vmlinux.symbols
+			'__start_syscalls_metadata' in self.vmlinux.symbols
 			or self.vmlinux.has_debug_info
 		)
 

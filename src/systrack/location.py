@@ -39,7 +39,9 @@ def grep_recursive(root: Path, exp: re.Pattern, exclude: Set[str],
 
 def grep_kernel_sources(kdir: Path, arch: Arch, syscalls: List[Syscall]) -> Iterator[Tuple[Syscall,Path,int]]:
 	if arch.compat:
-		exp = rb'\b(COMPAT_)?SYSCALL_DEFINE\d\s*\(\s*\w+'
+		exp = rb'\b(COMPAT_)?SYSCALL(32)?_DEFINE\d\s*\(\s*\w+'
+	elif arch.bits32:
+		exp = rb'\bSYSCALL(32)?_DEFINE\d\s*\(\s*\w+'
 	else:
 		exp = rb'\bSYSCALL_DEFINE\d\s*\(\s*\w+'
 
@@ -72,12 +74,17 @@ def grep_kernel_sources(kdir: Path, arch: Arch, syscalls: List[Syscall]) -> Iter
 		), cwd=kdir).splitlines()
 
 	if arch.compat:
-		exps = {s: re.compile(rf':(COMPAT_)?SYSCALL_DEFINE\d\({s.origname}[,)]') for s in syscalls}
+		exps = {s: re.compile(rf':(COMPAT_)?SYSCALL(32)?_DEFINE\d\({s.origname}[,)]') for s in syscalls}
+		key  = lambda l: (l.startswith('arch'), ('COMPAT' in l) + ('SYSCALL32' in l))
+	elif arch.bits32:
+		exps = {s: re.compile(rf':SYSCALL(32)?_DEFINE\d\({s.origname}[,)]') for s in syscalls}
+		key  = lambda l: (l.startswith('arch'), 'SYSCALL32' in l)
 	else:
 		exps = {s: re.compile(rf':SYSCALL_DEFINE\d\({s.origname}[,)]') for s in syscalls}
+		key  = lambda l: l.startswith('arch')
 
-	# Prioritize files under arch/ and also prefer compat syscalls if needed
-	out.sort(key=lambda l: (l.startswith('arch'), arch.compat and 'COMPAT' in l), reverse=True)
+	# Prioritize files under arch/ and prefer compat/32bit syscalls if needed
+	out.sort(key=key, reverse=True)
 
 	for line in out:
 		for sc, exp in tuple(exps.items()):
@@ -103,7 +110,7 @@ def good_location(file: Path, line: int, arch: Arch, name: str = '') -> bool:
 
 	# There are a lot of legacy/weird syscall definitions and some symbols can
 	# therefore point (addr2line output) to old-style `asmlinkage` functions
-	newstyle = ('^(COMPAT_)?' if arch.compat else '^') + rf'SYSCALL_DEFINE\d\({name}'
+	newstyle = ('^(COMPAT_)?' if arch.compat else '^') + rf'SYSCALL(32)?_DEFINE\d\({name}'
 	oldstyle = rf'^asmlinkage \w+' + (rf' sys(32)?_{name}\(' if name else '')
 	return re.match(f'{oldstyle}|{newstyle}', definition) is not None
 
