@@ -6,7 +6,7 @@ maintainers = [{name = 'Marco Bonelli', email = 'marco@mebeim.net'}]
 license = {file = 'LICENSE'}
 readme = 'README.md'
 platforms = 'any'
-python_requires = '>=3.6'
+requires-python = '>=3.6'
 dynamic = ['version']
 keywords = ['systrack', 'linux', 'kernel', 'syscall', 'kconfig', 'elf', 'abi']
 classifiers = [
@@ -27,7 +27,7 @@ classifiers = [
 ]
 
 [project.urls]
-homepage = 'https://github.com/mebeim/systrack.git'
+homepage = 'https://github.com/mebeim/systrack'
 repository = 'https://github.com/mebeim/systrack.git'
 
 [project.scripts]
