@@ -143,6 +143,20 @@ def main() -> int:
 	args = parse_args()
 	setup_logging(args.quiet, args.verbose, os.isatty(sys.stderr.fileno()))
 
+	arch_name = args.arch
+
+	if arch_name is not None:
+		arch_name = arch_name.lower()
+
+		if arch_name not in SUPPORTED_ARCHS:
+			if arch_name not in ('help', '?'):
+				eprint(f'Unsupported architecture/ABI combination: {arch_name}')
+				eprint(f"See '{sys.argv[0]} --arch help' for a list")
+				return 1
+
+			eprint(SUPPORTED_ARCHS_HELP)
+			return 0
+
 	if not args.kdir and not args.vmlinux:
 		eprint('Need to specify a kernel source direcory and/or path to vmlinux')
 		eprint(f"See '{sys.argv[0]} --help' for more information")
@@ -153,29 +167,16 @@ def main() -> int:
 			eprint('Need to specify a kernel source direcory (--kdir)')
 			return 1
 
-		if not args.arch:
+		if not arch_name:
 			eprint('Need to specify an architecture/ABI combination (--arch)')
 			eprint(f"See '{sys.argv[0]} --arch help' for a list")
 			return 1
 
-	arch_name = args.arch
 	cross     = args.cross or ''
 	vmlinux   = Path(args.vmlinux) if args.vmlinux else None
 	kdir      = Path(args.kdir)    if args.kdir    else None
 	outdir    = Path(args.out)     if args.out     else None
 	rdir      = Path(args.remap)   if args.remap   else None
-
-	if arch_name is not None:
-		arch_name = arch_name.lower()
-
-		if arch_name not in SUPPORTED_ARCHS:
-			if arch_name not in ('help', '?'):
-				eprint(f'Unsupported architecture/ABI combination: {args.arch}')
-				eprint(f"See '{sys.argv[0]} --arch help' for a list")
-				return 1
-
-			eprint(SUPPORTED_ARCHS_HELP)
-			return 0
 
 	# Checkout before building only if not set to auto
 	if args.checkout and args.checkout != 'auto':
