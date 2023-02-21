@@ -272,6 +272,7 @@ def main() -> int:
 	abs_paths = args.absolute_paths
 	n_no_loc  = 0
 	n_no_sig  = 0
+	n_grepped = 0
 
 	for sc in kernel.syscalls:
 		if sc.file is None:
@@ -283,10 +284,15 @@ def main() -> int:
 		if kdir and sc.signature is None:
 			n_no_sig += 1
 
+		if sc.grepped_location:
+			n_grepped += 1
+
 	eprint('Found', len(syscalls), 'implemented syscalls')
 
+	if n_grepped:
+		eprint('Found', n_grepped, 'definition location' + ('s' if n_grepped > 1 else ''), 'through grepping')
 	if n_no_loc:
-		eprint('Could not find location for', n_no_loc, 'syscall' + ('s' if n_no_loc > 1 else ''))
+		eprint('Could not find definition location for', n_no_loc, 'syscall' + ('s' if n_no_loc > 1 else ''))
 	if n_no_sig:
 		eprint('Could not extract signature for', n_no_sig, 'syscall' + ('s' if n_no_sig > 1 else ''))
 

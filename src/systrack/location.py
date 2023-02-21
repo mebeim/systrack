@@ -348,6 +348,15 @@ def extract_syscall_locations(syscalls: List[Syscall], vmlinux: ELF, kdir: Path,
 	# Disabling compiler optimizations could help, but the kernel does not have
 	# a CONFIG_ option for that, and generally highly relies on optimizations.
 	# Granted, the point here is not to build a runnable kernel, but still.
+	#
+	# In any case, even if they look legitimate, we cannot be sure of the
+	# correctness of definitions found through grepping. For example, we could
+	# be working with a 64-bit kernel with compat 32-bit support and find two
+	# definitions using the exact same SYSCALL_DEFINEx macro guarded by some
+	# preprocessor guards: we cannot know which one is correct in such case, the
+	# only way would be to manually analyze the code or magically invoke the
+	# preprocessor (which we are not even going to bother trying).
+
 	for sc, file, line in grep_kernel_sources(kdir, arch, to_grep):
 		if file is None:
 			logging.info('Location could not be found through grepping: %s%s',
@@ -358,6 +367,7 @@ def extract_syscall_locations(syscalls: List[Syscall], vmlinux: ELF, kdir: Path,
 			sc.file = file
 			sc.line = line
 			sc.good_location = True
+			sc.grepped_location = True
 
 			logging.warn('Location found through grepping: %s -> %s:%d',
 				sc.origname, rel(file), line)

@@ -10,23 +10,24 @@ class Syscall:
 		'index', 'number',
 		'name', 'origname', 'symbol',
 		'file', 'line', 'signature',
-		'esoteric', 'good_location', 'kconfig'
+		'esoteric', 'good_location', 'grepped_location', 'kconfig'
 	)
 
 	def __init__(self, index: int, number: int, name: str, origname: str,
 			symbol: Symbol, kconfig: str, file: Path = None, line: int = None,
 			signature: List[str] = None, esoteric: bool = False):
-		self.index         = index
-		self.number        = number
-		self.name          = name
-		self.origname      = origname
-		self.symbol        = symbol
-		self.kconfig       = kconfig
-		self.file          = file
-		self.line          = line
-		self.signature     = signature
-		self.esoteric      = esoteric
-		self.good_location = False
+		self.index            = index
+		self.number           = number
+		self.name             = name
+		self.origname         = origname
+		self.symbol           = symbol
+		self.kconfig          = kconfig
+		self.file             = file
+		self.line             = line
+		self.signature        = signature
+		self.esoteric         = esoteric
+		self.good_location    = False
+		self.grepped_location = False
 
 	def __repr__(s):
 		res  = f'Syscall(index={s.index} number={s.number}, name={s.name}, '

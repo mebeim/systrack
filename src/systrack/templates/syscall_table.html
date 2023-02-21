@@ -8,7 +8,7 @@
 		<style>{% include 'syscall_table.css' %}</style>
 	</head>
 	<body>
-		<h1>Linux {{kernel_version_tag}} syscall table &#x2014; {{arch}} {{bits}}-bit {{abi}} ABI</h1>
+		<h1>Linux {{kernel_version_tag}} syscall table &#x2014; {{arch}} {{bits}}-bit, {{abi}} ABI</h1>
 		<table>
 			<tbody>
 				<tr>
@@ -28,7 +28,13 @@
 					<td{%if sc.esoteric %} class="esoteric" title="This syscall is esoteric: it only exists on this architecture and has a special definition."{% endif %}>{{sc.name}}</td>
 					<td>{{sc.symbol.name}}</td>
 	# if sc.file and sc.line is not none
-					<td{% if not sc.good_location %} class="bad" title="This syscall definition is not standard, the identified location may be inaccurate"{% endif %}>
+		# if not sc.good_location
+					<td class="bad" title="This syscall definition is not standard, the identified location may be inaccurate">
+		# elif sc.grepped_location
+					<td class="bad" title="This syscall definition was found through grepping, the identified location may be inaccurate">
+		# else
+					<td>
+		# endif
 		# if sc.file.is_absolute()
 						{{sc.file}}:{{sc.line}}
 		# else
