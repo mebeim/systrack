@@ -17,6 +17,9 @@ class SyscallJSONEncoder(JSONEncoder):
 			dikt = {k: getattr(o, k) for k in o.__slots__}
 			# Symbol is a namedtuple subclass, but we only care about its .name
 			dikt['symbol'] = o.symbol.name
+			# Let's not waste space and remove CONFIG_ prefixes
+			if o.kconfig:
+				dikt['kconfig'] = o.kconfig.replace('CONFIG_', '')
 			return dikt
 
 		if isinstance(o, Path):
@@ -57,8 +60,29 @@ def output_syscalls_text(syscalls: Iterable[Syscall], spacing: int = 2):
 
 	sys.stdout.flush()
 
-def output_syscalls_json(syscalls: Iterable[Syscall]):
-	dump(syscalls, sys.stdout, cls=SyscallJSONEncoder, separators=(',', ':'))
+def output_syscalls_json(kernel: Kernel):
+	data = {
+		'systrack_version': VERSION,
+		'kernel': {
+			'version': kernel.version_tag,
+			'version_source': kernel.version_source,
+			'architecture': {
+				'name': kernel.arch.name,
+				'bits': 32 if kernel.arch.bits32 else 64
+			},
+			'abi': {
+				'name': kernel.arch.abi,
+				'calling_convention': {
+					'syscall_nr': kernel.arch.syscall_num_reg,
+					'parameters': kernel.arch.syscall_arg_regs
+				}
+			},
+			'syscall_table_symbol': kernel.arch.syscall_table_name
+		},
+		'syscalls': kernel.syscalls
+	}
+
+	dump(data, sys.stdout, cls=SyscallJSONEncoder, separators=(',', ':'))
 
 def output_syscalls_html(kernel: Kernel):
 	try:
@@ -89,7 +113,7 @@ def output_syscalls(kernel: Kernel, fmt: str):
 	if fmt == 'text':
 		output_syscalls_text(kernel.syscalls)
 	elif fmt == 'json':
-		output_syscalls_json(kernel.syscalls)
+		output_syscalls_json(kernel)
 	elif fmt == 'html':
 		output_syscalls_html(kernel)
 	else:
