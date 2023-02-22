@@ -162,15 +162,14 @@ def main() -> int:
 		eprint(f"See '{sys.argv[0]} --help' for more information")
 		return 1
 
-	if args.checkout or args.config or args.build:
-		if not args.kdir:
-			eprint('Need to specify a kernel source direcory (--kdir)')
-			return 1
+	if not args.kdir and (args.checkout or args.config or args.build):
+		eprint('Need to specify a kernel source direcory (--kdir)')
+		return 1
 
-		if not arch_name:
-			eprint('Need to specify an architecture/ABI combination (--arch)')
-			eprint(f"See '{sys.argv[0]} --arch help' for a list")
-			return 1
+	if not arch_name and (args.config or args.build):
+		eprint('Need to specify an architecture/ABI combination (--arch)')
+		eprint(f"See '{sys.argv[0]} --arch help' for a list")
+		return 1
 
 	cross     = args.cross or ''
 	vmlinux   = Path(args.vmlinux) if args.vmlinux else None
