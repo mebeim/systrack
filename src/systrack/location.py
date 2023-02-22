@@ -150,7 +150,15 @@ def adjust_line(file: Path, line: int) -> int:
 
 		if l == b'{':
 			for j in range(i - 1, -1, -1):
-				if not lines[j][0:1].isspace():
+				char = lines[j][0:1]
+
+				if not char.isspace():
+					if char == b'#':
+						# SYSCALL_DEFINE macro wrapped in preprocessor guards,
+						# annoying but it can happen (e.g., clone in v5.0 at
+						# kernel/fork.c:2328). Just skip the directive.
+						continue
+
 					# Found function signature
 					return j + 1
 
