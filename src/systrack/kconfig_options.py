@@ -98,8 +98,6 @@ KCONFIG_COMPATIBILITY = VersionedList((
 #   useless to differentiate between archs for this, the kernel Makefile will
 #   just remove it if unneeded
 #
-# - TODO: COMPAT_32BIT_TIME
-#
 KCONFIG_MORE_SYSCALLS = VersionedDict((
 	# since        removed in   name=value               dependencies
 	((3,18)      , VERSION_INF, 'ADVISE_SYSCALLS=y'    , []),
@@ -333,6 +331,7 @@ KCONFIG_SYSCALL_DEPS = VersionedDict((
 	(VERSION_ZERO, VERSION_INF, 'setgroups16'            , 'UID16'                           ), # legacy
 	(VERSION_ZERO, VERSION_INF, 'userfaultfd'            , 'USERFAULTFD'                     ),
 	(VERSION_ZERO, VERSION_INF, 'uselib'                 , 'USELIB'                          ), # obsolete (32bit only?)
+	(VERSION_ZERO, VERSION_INF, 'vm86old'                , 'VM86'                            ), # 32-bit only
 	(VERSION_ZERO, VERSION_INF, 'vm86'                   , 'VM86'                            ), # 32-bit only
 	(VERSION_ZERO, VERSION_INF, 'pkey_alloc'             , 'X86_INTEL_MEMORY_PROTECTION_KEYS'), # x86 only
 	(VERSION_ZERO, VERSION_INF, 'pkey_free'              , 'X86_INTEL_MEMORY_PROTECTION_KEYS'), # x86 only
