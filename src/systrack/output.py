@@ -82,7 +82,7 @@ def output_syscalls_json(kernel: Kernel):
 		'syscalls': kernel.syscalls
 	}
 
-	dump(data, sys.stdout, cls=SyscallJSONEncoder, separators=(',', ':'))
+	dump(data, sys.stdout, cls=SyscallJSONEncoder, sort_keys=True, indent='\t')
 
 def output_syscalls_html(kernel: Kernel):
 	try:
