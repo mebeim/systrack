@@ -17,6 +17,41 @@ Installation
 Install through Pip with `pip install systrack`. For HTML output support,
 install `systrack[html]`, this will also install the needed dependencies.
 
+Usage
+-----
+
+Systrack can mainly be used for two purposes: analyzing or building Linux
+kernels. For more detailed information, see `systrack --help`. For information
+about supported architecture/ABI combinations, see `systrack --arch help`.
+
+- **Building** can be done through the `--build` option. You will need to
+  provide a kernel source directory (`--kdir`) and an architecture/ABI
+  combination to build for (`--arch`).
+
+  ```none
+  systrack --build --kdir path/to/linux_git_repo --arch x86-64
+  ```
+
+- **Analyzing** a kernel image can be done given a `vmlinux` ELF with symbols,
+  and optionally also a kernel source directory (`--kdir`). Systrack will
+  extract information about implemented syscalls from the symbol table present
+  in the given `vmlinux` ELF, and if debugging information is present, it will
+  also extract file and line number information for syscall definitions.
+  Supplying `--kdir` will help refine and/or correct the location of the
+  definitions, pointing Systrack to the checked-out sources for the right kernel
+  version (the same as the one to analyze).
+
+  Systrack can guess the architecture and ABI to analyze, but if the given
+  kernel was built for support for multiple ABIs, the right one can be selected
+  through `--arch`.
+
+  ```none
+  systrack path/to/vmlinux
+  systrack --format json path/to/vmlinux
+  systrack --kdir path/to/linux_git_repo path/to/vmlinux
+  systrack --kdir path/to/linux_git_repo --arch x86-64-ia32 path/to/vmlinux
+  ```
+
 Runtime dependencies
 --------------------
 
