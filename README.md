@@ -1,10 +1,12 @@
 Systrack
 ========
 
-A tool to analyze Linux kernel images (`vmlinux`) and extract information about
-implemented syscalls. Given a `vmlinux` image, Systrack can extract syscall
-numbers, names, symbol names, definition locations within kernel sources,
-function signatures, and more.
+<img align="left" width="150" height="150" src="assets/logo.png" alt="Systrack logo"></img>
+
+Systrack is a tool to analyze Linux kernel images (`vmlinux`) and extract
+information about implemented syscalls. Given a `vmlinux` image, Systrack can
+extract syscall numbers, names, symbol names, definition locations within kernel
+sources, function signatures, and more.
 
 Systrack can configure and build kernels for all its supported architectures,
 and works best at analyzing kernels that it has configured and built by itself.
@@ -52,3 +54,7 @@ Limitations
   if the kernel is relocatable the syscall table is relocated at startup and
   does not contain valid virtual addresses: Systrack will currently fail to
   analyze such kernels.
+
+---
+
+*Copyright &copy; 2023 Marco Bonelli. Licensed under the GNU General Public License v3.0.*
