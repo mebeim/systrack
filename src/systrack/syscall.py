@@ -6,6 +6,8 @@ from collections import Counter
 from .elf import Symbol
 
 class Syscall:
+	'''Class representing a Linux syscall.
+	'''
 	__slots__ = (
 		'index', 'number',
 		'name', 'origname', 'symbol',

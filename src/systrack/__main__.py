@@ -17,11 +17,16 @@ from .utils import command_available, gcc_version, git_checkout, maybe_rel, form
 from .arch import SUPPORTED_ARCHS, SUPPORTED_ARCHS_HELP
 from .output import output_syscalls
 
-def wrap_help(body):
+def wrap_help(body: str) -> str:
+	'''Wrap a string to 65 columns without breaking words for a nice --help
+	output of the tool.
+	'''
 	tx = TextWrapper(65, break_long_words=False, replace_whitespace=False)
 	return '\n'.join(tx.fill(line) for line in body.splitlines() if line.strip())
 
-def parse_args():
+def parse_args() -> argparse.Namespace:
+	'''Parse and partially validate command line arguments through argparse.
+	'''
 	ap = argparse.ArgumentParser(
 		prog='systrack',
 		usage=f'systrack [OPTIONS...] [VMLINUX]',
@@ -74,7 +79,11 @@ def parse_args():
 
 	return ap.parse_args()
 
-def setup_logging(quietness, verbosity, colors=True):
+def setup_logging(quietness: int, verbosity: int, colors: bool = True):
+	'''Setup logging verbosity on the root logger based on the given quietness
+	and verbosity levels from command line arguments (number of -q and -v
+	options given). Enable colored logs with ANSI escape codes if color=True.
+	'''
 	orig_factory = logging.getLogRecordFactory()
 
 	if verbosity > 0:
@@ -116,6 +125,9 @@ def setup_logging(quietness, verbosity, colors=True):
 	logging.setLogRecordFactory(record_factory)
 
 def instantiate_kernel(*a, **kwa) -> Kernel:
+	'''Instantiate the Kernel class with the given parameters, handling and
+	printing possible errors.
+	'''
 	try:
 		return Kernel(*a, **kwa)
 	except KernelVersionError:
