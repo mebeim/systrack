@@ -367,8 +367,8 @@ def extract_syscall_locations(syscalls: List[Syscall], vmlinux: ELF, kdir: Path,
 
 	for sc, file, line in grep_kernel_sources(kdir, arch, to_grep):
 		if file is None:
-			logging.info('Location could not be found through grepping: %s%s',
-				sc.name, '(orig %s)' if sc.origname != sc.name else '')
+			logging.info('Location could not be found through grepping: %s '
+				'(orig name %s)', sc.name, sc.origname)
 			continue
 
 		if good_location(file, line, arch, sc.origname):
