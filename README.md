@@ -1,7 +1,7 @@
 Systrack
 ========
 
-<img align="left" width="150" height="150" src="assets/logo.png" alt="Systrack logo"></img>
+<img align="left" width="150" height="150" src="https://raw.githubusercontent.com/mebeim/systrack/master/assets/logo.png" alt="Systrack logo"></img>
 
 **Syscall tables live at [syscalls.mebeim.net](https://syscalls.mebeim.net)**.
 
