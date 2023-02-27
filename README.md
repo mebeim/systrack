@@ -3,7 +3,7 @@ Systrack
 
 <img align="left" width="150" height="150" src="https://raw.githubusercontent.com/mebeim/systrack/master/assets/logo.png" alt="Systrack logo"></img>
 
-**Syscall tables live at [syscalls.mebeim.net](https://syscalls.mebeim.net)**.
+**See [mebeim/linux-syscalls](https://github.com/mebeim/linux-syscalls) for live syscall tables powered by Systrack**.
 
 Systrack is a tool to analyze Linux kernel images (`vmlinux`) and extract
 information about implemented syscalls. Given a `vmlinux` image, Systrack can
