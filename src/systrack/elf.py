@@ -37,9 +37,9 @@ class Symbol:
 
 	def __repr__(s):
 		if s.real_vaddr == s.vaddr:
-			return f'Symbol({s.name} at 0x{s.vaddr:x}, type={s.type}, size=0x{s.size:x})'
+			return f'Symbol("{s.name}" at 0x{s.vaddr:x}, type={s.type}, size=0x{s.size:x})'
 		else:
-			return f'Symbol({s.name} at 0x{s.vaddr:x} (real 0x{s.real_vaddr:x}), type={s.type}, size=0x{s.size:x})'
+			return f'Symbol("{s.name}" at 0x{s.vaddr:x} (real 0x{s.real_vaddr:x}), type={s.type}, size=0x{s.size:x})'
 
 class ELF:
 	__slots__ = (

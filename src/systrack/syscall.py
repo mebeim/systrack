@@ -32,8 +32,8 @@ class Syscall:
 		self.grepped_location = False
 
 	def __repr__(s):
-		res  = f'Syscall(index={s.index} number={s.number}, name={s.name}, '
-		res += f'symbol={s.symbol.name} defined at {s.file}:{s.line}, '
+		res  = f'Syscall(index={s.index} number={s.number}, name="{s.name}", '
+		res += f'symbol="{s.symbol.name}" defined at {s.file}:{s.line}, '
 		res += f'takes {len(s.signature) if s.signature else "?"} args'
 		res += f', depends on {s.kconfig})' if s.kconfig else ')'
 		return res
