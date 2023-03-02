@@ -432,7 +432,7 @@ class Kernel:
 					else:
 						hint = ''
 
-					bad_loc_info.append((sc.name, sc.symbol.name, self.__rel(file), line, hint))
+					bad_loc_info.append((sc.name, sc.symbol.name, self.__rel(file), str(line), hint))
 
 			if file is None and self.can_extract_location_info:
 				no_loc_info.append((sc.name, sc.symbol.name))
@@ -443,7 +443,7 @@ class Kernel:
 			implemented.append(sc)
 
 		for info in bad_loc_info:
-			logging.warn('Potentially bad location for %s (%s): %s:%d%s', *info)
+			logging.warn('Potentially bad location for %s (%s): %s:%s%s', *info)
 
 		for info in no_loc_info:
 			logging.error('Unable to find location for %s (%s)', *info)
