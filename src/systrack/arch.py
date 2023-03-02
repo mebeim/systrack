@@ -52,36 +52,47 @@ SUPPORTED_ARCHS.update({alias: SUPPORTED_ARCHS[arch] for arch, alias in ARCH_ALI
 SUPPORTED_ARCHS_HELP = '''\
 Supported architectures and ABIs (values are case-insensitive):
 
-    Value          Aliases         Arch  Kernel  ABI             Build based on    Notes
-    ------------------------------------------------------------------------------------
+    Value          Aliases         Arch  Kernel  ABI             Build based on      Notes
+    --------------------------------------------------------------------------------------
     x86            i386, ia32      x86   32-bit  32-bit IA32     i386_defconfig
-    x86-64         x64             x86   64-bit  64-bit x86-64   x86_64_defconfig  [1]
-    x86-64-x32     x32             x86   64-bit  64-bit x32      x86_64_defconfig  [1]
-    x86-64-ia32    ia32-64         x86   64-bit  32-bit IA32     x86_64_defconfig  [1]
-    ------------------------------------------------------------------------------------
-    arm            arm-eabi, eabi  ARM   32-bit  32-bit EABI     defconfig         [1]
-    arm-oabi       oabi            ARM   32-bit  32-bit OABI     defconfig         [2]
-    ------------------------------------------------------------------------------------
+    x86-64         x64             x86   64-bit  64-bit x86-64   x86_64_defconfig    [1]
+    x86-64-x32     x32             x86   64-bit  64-bit x32      x86_64_defconfig    [1]
+    x86-64-ia32    ia32-64         x86   64-bit  32-bit IA32     x86_64_defconfig    [1]
+    --------------------------------------------------------------------------------------
+    arm            arm-eabi, eabi  ARM   32-bit  32-bit EABI     multi_v7_defconfig  [2]
+    arm-oabi       oabi            ARM   32-bit  32-bit OABI     multi_v7_defconfig  [2,3]
+    --------------------------------------------------------------------------------------
     arm64          aarch64         ARM   64-bit  64-bit AArch64  defconfig
-    arm64-aarch32  aarch32-64      ARM   64-bit  32-bit AArch32  defconfig         [3]
-    ------------------------------------------------------------------------------------
+    arm64-aarch32  aarch32-64      ARM   64-bit  32-bit AArch32  defconfig           [4]
+    --------------------------------------------------------------------------------------
     mips           mips32, o32     MIPS  32-bit  32-bit O32      defconfig
-    mips64         n64             MIPS  64-bit  64-bit N64      defconfig         [1]
-    mips64-n32     n32             MIPS  64-bit  64-bit N32      defconfig         [1]
-    mips64-o32     o32-64          MIPS  64-bit  32-bit O32      defconfig         [1]
+    mips64         n64             MIPS  64-bit  64-bit N64      defconfig           [1]
+    mips64-n32     n32             MIPS  64-bit  64-bit N32      defconfig           [1]
+    mips64-o32     o32-64          MIPS  64-bit  32-bit O32      defconfig           [1]
 
     [1] Building creates a kernel supporting all ABIs for this architecture.
-    [2] Building creates an EABI kernel with compat OABI support. Building an OABI-only
+    [2] Building for Linux <= v3.7 will use "defconfig" instead.
+    [3] Building creates an EABI kernel with compat OABI support. Building an OABI-only
         kernel is NOT supported. The seccomp filter system will be missing.
-    [3] AArch64 with compat AArch32 support. AArch32-only kernel NOT supported.
+    [4] AArch64 with compat AArch32 support. AArch32-only kernel NOT supported.
 '''
 
 class Arch(ABC):
 	# Directory name for this arch in the kernel source, under arch/
 	name: str = None
 
-	# Are we looking for compat syscalls (COMPACT_SYSCALL_DEFINEn)?
+	# Whether this arch is 32-bits or not
+	bits32: bool = False
+
+	# Selected ABI
+	abi: str = None
+
+	# Are we looking for compat syscalls (COMPACT_SYSCALL_DEFINEn)? Or, in other
+	# words, is this not the "main" ABI of the kernel we're analyzing?
 	compat: bool = False
+
+	# Kernel version that we are intersted in analyzing
+	kernel_version: Tuple[int,int,int] = None
 
 	# Make target to build for the base config
 	config_target: str = 'defconfig'
@@ -114,6 +125,9 @@ class Arch(ABC):
 		self.kernel_version = kernel_version
 		self.bits32 = bits32
 		self.abi = abi # ABI to inspect/build for
+
+	def __repr__(s):
+		return f'{s.__class__.__name__}(name={s.name!r}, abi={s.abi!r}, compat={s.compat!r}, ...)'
 
 	@staticmethod
 	def from_name(name: str, kernel_version: Tuple[int,int,int]) -> 'Arch':

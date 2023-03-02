@@ -185,6 +185,8 @@ class Kernel:
 			return []
 
 		self.arch.adjust_abi(self.vmlinux)
+		logging.debug('Arch: %r', self.arch)
+
 		syscall_table_name = self.arch.syscall_table_name
 		tbl = self.vmlinux.symbols.get(syscall_table_name)
 		ni_syscalls = set()
@@ -510,6 +512,7 @@ class Kernel:
 		config_file = (self.outdir or self.kdir) / '.config'
 		self.__version = None
 
+		logging.info('Configuring for Arch: %r', self.arch)
 		logging.info('Base config target: %s', self.arch.config_target)
 		self.make(self.arch.config_target)
 
