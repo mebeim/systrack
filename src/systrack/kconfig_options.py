@@ -192,6 +192,7 @@ KCONFIG_SYSCALL_DEPS = VersionedDict((
 	(VERSION_ZERO, VERSION_INF, 'open_by_handle_at'      , 'FHANDLE'                         ),
 	(VERSION_ZERO, VERSION_INF, 'fanotify_init'          , 'FANOTIFY'                        ),
 	(VERSION_ZERO, VERSION_INF, 'fanotify_mark'          , 'FANOTIFY'                        ),
+	(VERSION_ZERO, VERSION_INF, 'fork'                   , 'MMU'                             ),
 	(VERSION_ZERO, VERSION_INF, 'futex'                  , 'FUTEX'                           ),
 	(VERSION_ZERO, VERSION_INF, 'futex_waitv'            , 'FUTEX'                           ),
 	(VERSION_ZERO, VERSION_INF, 'get_robust_list'        , 'FUTEX'                           ),
