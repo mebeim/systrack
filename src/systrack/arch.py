@@ -66,9 +66,9 @@ Supported architectures and ABIs (values are case-insensitive):
     arm64-aarch32  aarch32-64      ARM   64-bit  32-bit AArch32  defconfig           [4]
     --------------------------------------------------------------------------------------
     mips           mips32, o32     MIPS  32-bit  32-bit O32      defconfig
-    mips64         n64             MIPS  64-bit  64-bit N64      defconfig           [1]
-    mips64-n32     n32             MIPS  64-bit  64-bit N32      defconfig           [1]
-    mips64-o32     o32-64          MIPS  64-bit  32-bit O32      defconfig           [1]
+    mips64         n64             MIPS  64-bit  64-bit N64      ip27_defconfig      [1]
+    mips64-n32     n32             MIPS  64-bit  64-bit N32      ip27_defconfig      [1]
+    mips64-o32     o32-64          MIPS  64-bit  32-bit O32      ip27_defconfig      [1]
 
     [1] Building creates a kernel supporting all ABIs for this architecture.
     [2] Building for Linux <= v3.7 will use "defconfig" instead.
@@ -734,10 +734,10 @@ class ArchMips(Arch):
 		assert self.abi in ('o32', 'n32', 'n64')
 
 		if self.abi == 'o32':
+			# Interestingly, man 2 syscall states: "The mips/o32 system call
+			# convention passes arguments 5 through 8 on the user stack".
+			# What syscall takes 8 arguments on MIPS o32? WTF.
 			self.syscall_num_base = 4000
-			# TODO: man 2 syscall states: "The mips/o32 system call convention
-			# passes arguments 5 through 8 on the user stack"... which syscall
-			# takes 8 arguments on MIPS o32? WTF.
 			self.syscall_arg_regs = ('a0', 'a1', 'a2', 'a3', 'stack', 'stack', 'stack', 'stack')
 
 			if not self.bits32:
@@ -751,26 +751,32 @@ class ArchMips(Arch):
 				self.syscall_num_base = 6000
 				self.syscall_table_name = 'sysn32_call_table'
 
-		# Select CPU type and kernel bits. These config options are a multiple
-		# choice menu, so better set all of them just to be sure.
-		# TODO: Does CPU release selection matter? Just select the most generic.
 		if self.bits32:
 			# MIPS 32bit means o32 ABI.
 			assert self.abi == 'o32'
 
-			self.kconfig.add(VERSION_ZERO, VERSION_INF, '32BIT=y'        , [])
-			self.kconfig.add(VERSION_ZERO, VERSION_INF, '64BIT=n'        , [])
-			self.kconfig.add((2,6,15)    , VERSION_INF, 'CPU_MIPS32_R1=y', ['SYS_HAS_CPU_MIPS32_R1=y'])
-			self.kconfig.add((2,6,15)    , VERSION_INF, 'CPU_MIPS32_R2=n', [])
-			self.kconfig.add((4,0)       , VERSION_INF, 'CPU_MIPS32_R6=n', [])
+			# Just to be clear: for 32-bit we are ok with defconfig
+			self.config_target = 'defconfig'
+
+			self.kconfig.add(VERSION_ZERO, VERSION_INF, '32BIT=y', [])
+			self.kconfig.add(VERSION_ZERO, VERSION_INF, '64BIT=n', [])
+
+			# Select CPU release. It does not seem to matter much, so select R2,
+			# which has the best kernel version compatibility (along with R1).
+			# These are a multiple choice menu, so better set all of them.
+			self.kconfig.add((2,6,15), VERSION_INF, 'CPU_MIPS32_R1=n', [])
+			self.kconfig.add((2,6,15), VERSION_INF, 'CPU_MIPS32_R2=y', ['SYS_HAS_CPU_MIPS32_R2=y'])
+			self.kconfig.add((4,0)   , VERSION_INF, 'CPU_MIPS32_R6=n', [])
 		else:
 			self.compat = self.abi != 'n64'
 
-			self.kconfig.add(VERSION_ZERO, VERSION_INF, '32BIT=n'        , [])
-			self.kconfig.add(VERSION_ZERO, VERSION_INF, '64BIT=y'        , [])
-			self.kconfig.add((2,6,15)    , VERSION_INF, 'CPU_MIPS64_R1=y', ['SYS_HAS_CPU_MIPS64_R1=y'])
-			self.kconfig.add((2,6,15)    , VERSION_INF, 'CPU_MIPS64_R2=n', [])
-			self.kconfig.add((4,0)       , VERSION_INF, 'CPU_MIPS64_R6=n', [])
+			# Grab SGI IP27 (Origin200/2000), which apparently is the only MIPS
+			# machine with NUMA support (wut?). No need to select CPU release
+			# for this, it's R10000.
+			self.config_target = 'ip27_defconfig'
+
+			self.kconfig.add(VERSION_ZERO, VERSION_INF, '32BIT=n', [])
+			self.kconfig.add(VERSION_ZERO, VERSION_INF, '64BIT=y', [])
 
 			# MIPS 64bit supports all ABIs: 32bit o32, 64bit n32, 64bit n64.
 			# Enable all of them regardless, we will be able to extract the
