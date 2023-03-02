@@ -296,9 +296,9 @@ class Arch(ABC):
 		return noprefix(name, 'old_')
 
 	def is_dummy_syscall(self, code: bytes) -> bool:
-		'''Determine whether the provided machine code is just `return -ENOSYS`,
-		meaning that the syscall it was extracted from is not actually
-		implemented.
+		'''Determine whether the provided machine code is just something like
+		`return -ENOSYS` or `return -EINVAL` (e.g. fork with no MMU), meaning
+		that the syscall it was extracted from is not actually implemented.
 		'''
 		return False
 
@@ -473,23 +473,27 @@ class ArchX86(Arch):
 		return noprefix(name, 'ia32_', 'x86_', 'x32_')
 
 	def is_dummy_syscall(self, code: bytes) -> bool:
-		# Check if the code of the syscall only consists of `MOV RAX, -ENOSYS`
-		# followed by a RET or relative JMP, e.g. lookup_dcookie in v5.19:
+		# Check if the code of the syscall only consists of `mov rax, -ENOSYS`
+		# or `mov rax, -EINVAL` followed by a RET or relative JMP, e.g.
+		# lookup_dcookie in v5.19:
 		#
 		#     48 c7 c0 da ff ff ff     mov    rax,  0xffffffffffffffda
 		#     e9 84 ca f6 00           jmp    0xf6ca90
+		#
+		sz = len(code)
+		bad_imm = (b'\xda\xff\xff\xff', b'\xea\xff\xff\xff') # -ENOSYS, -EINVAL
 
 		if self.abi == 'ia32':
-			if code[:5] == b'\xb8\xda\xff\xff\xff':                 # mov eax, -ENOSYS
-				if len(code) == 6  and code[5] == 0xc3: return True # ret
-				if len(code) == 7  and code[5] == 0xeb: return True # jmp rel8
-				if len(code) == 10 and code[5] == 0xe9: return True # jmp rel32
+			if code[:1] == b'\xb8' and code[1:5] in bad_imm: # mov eax, -ENOSYS/-EINVAL
+				if sz == 6  and code[5] == 0xc3: return True # ret
+				if sz == 7  and code[5] == 0xeb: return True # jmp rel8
+				if sz == 10 and code[5] == 0xe9: return True # jmp rel32
 			return False
 
-		if code[:7] == b'\x48\xc7\xc0\xda\xff\xff\xff':         # mov rax, -ENOSYS
-			if len(code) == 8  and code[7] == 0xc3: return True # ret
-			if len(code) == 9  and code[7] == 0xeb: return True # jmp rel8
-			if len(code) == 12 and code[7] == 0xe9: return True # jmp rel32
+		if code[:3] == b'\x48\xc7\xc0' and code[3:7] in bad_imm: # mov rax, -ENOSYS/-EINVAL
+			if sz == 8  and code[7] == 0xc3: return True # ret
+			if sz == 9  and code[7] == 0xeb: return True # jmp rel8
+			if sz == 12 and code[7] == 0xe9: return True # jmp rel32
 		return False
 
 class ArchArm(Arch):
