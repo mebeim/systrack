@@ -175,7 +175,7 @@ def extract_syscall_locations(syscalls: List[Syscall], vmlinux: ELF, kdir: Path,
 		return
 
 	vmlinux = vmlinux.path
-	locs = addr2line(vmlinux, map(lambda s: s.symbol.vaddr, syscalls))
+	locs = addr2line(vmlinux, map(lambda s: s.symbol.real_vaddr, syscalls))
 
 	if not kdir:
 		for sc, (file, line) in zip(syscalls, locs):
@@ -259,7 +259,7 @@ def extract_syscall_locations(syscalls: List[Syscall], vmlinux: ELF, kdir: Path,
 	# try checking vaddr + symbol_size - 1 with addr2line.
 
 	if to_adjust:
-		vaddrs = tuple(map(lambda s: s.symbol.vaddr + s.symbol.size - 1, to_adjust))
+		vaddrs = tuple(map(lambda s: s.symbol.real_vaddr + s.symbol.size - 1, to_adjust))
 		new_locs = addr2line(vmlinux, vaddrs)
 
 		for sc, loc in zip(to_adjust, new_locs):
@@ -306,7 +306,7 @@ def extract_syscall_locations(syscalls: List[Syscall], vmlinux: ELF, kdir: Path,
 	# to this point, there is probably no file/line debug info for it at all.
 
 	for sc in to_retry:
-		addrs = range(sc.symbol.vaddr + 1, sc.symbol.vaddr + sc.symbol.size - 2)
+		addrs = range(sc.symbol.real_vaddr + 1, sc.symbol.real_vaddr + sc.symbol.size - 2)
 		invalid = True
 
 		for offset, loc in enumerate(addr2line(vmlinux, addrs), 1):

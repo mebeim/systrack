@@ -101,8 +101,8 @@ def extract_syscall_signatures(syscalls: List[Syscall], vmlinux: ELF, have_sourc
 	if have_syscall_metadata:
 		logging.info('Kernel has ftrace syscall metadata from FTRACE_SYSCALLS=y')
 
-		start    = vmlinux.symbols['__start_syscalls_metadata'].vaddr
-		stop     = vmlinux.symbols['__stop_syscalls_metadata'].vaddr
+		start    = vmlinux.symbols['__start_syscalls_metadata'].real_vaddr
+		stop     = vmlinux.symbols['__stop_syscalls_metadata'].real_vaddr
 		ptr_fmt  = '<>'[vmlinux.big_endian] + 'QL'[vmlinux.bits32]
 		meta_fmt = '<>'[vmlinux.big_endian] + ('QllQQ', 'LllLL')[vmlinux.bits32]
 		ptr_sz   = 4 if vmlinux.bits32 else 8

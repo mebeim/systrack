@@ -22,11 +22,24 @@ class E_FLAGS(IntEnum):
 	EF_ARM_EABI_MASK = 0xff000000
 
 Section  = namedtuple('Section', ('vaddr', 'off', 'size'))
-_Symbol  = namedtuple('_Symbol', ('vaddr', 'size', 'type', 'name'))
 
-class Symbol(_Symbol):
+class Symbol:
+	'''Class representing an ELF symbol.
+	'''
+	__slots__ = ('vaddr', 'real_vaddr', 'size', 'type', 'name')
+
+	def __init__(self, vaddr: int, real_vaddr: int, size: int, typ: str, name: str):
+		self.vaddr      = vaddr
+		self.real_vaddr = real_vaddr
+		self.size       = size
+		self.type       = typ
+		self.name       = name
+
 	def __repr__(s):
-		return f'Symbol({s.name} at 0x{s.vaddr:x}, type={s.type}, size=0x{s.size:x})'
+		if s.real_vaddr == s.vaddr:
+			return f'Symbol({s.name} at 0x{s.vaddr:x}, type={s.type}, size=0x{s.size:x})'
+		else:
+			return f'Symbol({s.name} at 0x{s.vaddr:x} (real 0x{s.real_vaddr:x}), type={s.type}, size=0x{s.size:x})'
 
 class ELF:
 	__slots__ = (
@@ -114,12 +127,19 @@ class ELF:
 			if not match:
 				continue
 
-			v, s, t, n = match.groups()
-			sym = Symbol(int(v, 16), int(s), t, n)
+			vaddr, sz, typ, name = match.groups()
+			vaddr = int(vaddr, 16)
+			sym = Symbol(vaddr, vaddr, int(sz), typ, name)
 			syms[sym.name] = sym
 
-			if t == 'FUNC':
+			if typ == 'FUNC':
 				funcs[sym.name] = sym
+
+				# Unaligned vaddr on ARM 32-bit means the function code is in
+				# Thumb mode. Nonetheless, the actual code is aligned, so the
+				# real vaddr is a multiple of 2.
+				if self.e_machine == E_MACHINE.EM_ARM and vaddr & 1:
+					sym.real_vaddr = vaddr & 0xfffffffe
 
 		self.__symbols = syms
 		self.__functions = funcs
@@ -147,4 +167,5 @@ class ELF:
 	def read_symbol(self, sym: Union[str,Symbol]) -> bytes:
 		if not isinstance(sym, Symbol):
 			sym = self.symbols[sym]
-		return self.vaddr_read(sym.vaddr, sym.size)
+
+		return self.vaddr_read(sym.real_vaddr, sym.size)
