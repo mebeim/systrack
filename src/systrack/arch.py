@@ -241,7 +241,7 @@ class Arch(ABC):
 		common enough to be indentified as common prefixes and stripped
 		automatically.
 		'''
-		return noprefix(sym_name, 'ptregs_sys_')
+		return noprefix(sym_name, 'ptregs_sys_', '__se_sys_', '__sys_')
 
 	def normalize_syscall_name(self, name: str) -> str:
 		'''Normalize a syscall name removing unneeded prefixes and suffixes.
