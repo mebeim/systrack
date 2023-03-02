@@ -295,12 +295,28 @@ class Arch(ABC):
 		#
 		return noprefix(name, 'old_')
 
-	def is_dummy_syscall(self, code: bytes) -> bool:
-		'''Determine whether the provided machine code is just something like
-		`return -ENOSYS` or `return -EINVAL` (e.g. fork with no MMU), meaning
-		that the syscall it was extracted from is not actually implemented.
+	def _dummy_syscall_code(self, sc: Syscall, vmlinux: ELF) -> Optional[bytes]:
+		'''Determine whether a syscall has a dummy implementation (e.g. one that
+		only does `return -ENOSYS/-EINVAL`). If this is the case, return the
+		machine code of the syscall, otherwise None.
 		'''
-		return False
+		return None
+
+	def is_dummy_syscall(self, sc: Syscall, vmlinux: ELF) -> bool:
+		'''Determine whether a syscall has a dummy implementation (e.g. one that
+		only does `return -ENOSYS/-EINVAL`).
+
+		NOTE: this is just a wrapper around ._dummy_syscall_code() that also
+		logs some useful info in case s dummy syscall is detected. Subclesses
+		should only override ._dummy_syscall_code().
+		'''
+		code = self._dummy_syscall_code(sc, vmlinux)
+		if code is None:
+			return False
+
+		logging.info('Syscall %s (%s) is not really implemented (dummy '
+			'implementation). Machine code: %s.', sc.name, sc.symbol.name, code.hex())
+		return True
 
 class ArchX86(Arch):
 	name = 'x86'
@@ -472,29 +488,33 @@ class ArchX86(Arch):
 		# E.g. v5.18 COMPAT_SYSCALL_DEFINE1(ia32_mmap, ...)
 		return noprefix(name, 'ia32_', 'x86_', 'x32_')
 
-	def is_dummy_syscall(self, code: bytes) -> bool:
-		# Check if the code of the syscall only consists of `mov rax, -ENOSYS`
-		# or `mov rax, -EINVAL` followed by a RET or relative JMP, e.g.
+	def _dummy_syscall_code(self, sc: Syscall, vmlinux: ELF) -> Optional[bytes]:
+		# Check if the code of the syscall only consists of
+		# `MOV rax/eax, -ENOSYS/-EINVAL` followed by a RET or relative JMP, e.g.
 		# lookup_dcookie in v5.19:
 		#
 		#     48 c7 c0 da ff ff ff     mov    rax,  0xffffffffffffffda
 		#     e9 84 ca f6 00           jmp    0xf6ca90
 		#
-		sz = len(code)
-		bad_imm = (b'\xda\xff\xff\xff', b'\xea\xff\xff\xff') # -ENOSYS, -EINVAL
+		sz = sc.symbol.size
+		if sz < 6 or sz > 12:
+			return None
+
+		code = vmlinux.read_symbol(sc.symbol)
+		bad_imm = (b'\xda\xff\xff\xff', b'\xea\xff\xff\xff')
 
 		if self.abi == 'ia32':
 			if code[:1] == b'\xb8' and code[1:5] in bad_imm: # mov eax, -ENOSYS/-EINVAL
-				if sz == 6  and code[5] == 0xc3: return True # ret
-				if sz == 7  and code[5] == 0xeb: return True # jmp rel8
-				if sz == 10 and code[5] == 0xe9: return True # jmp rel32
-			return False
+				if sz == 6  and code[5] == 0xc3: return code # ret
+				if sz == 7  and code[5] == 0xeb: return code # jmp rel8
+				if sz == 10 and code[5] == 0xe9: return code # jmp rel32
+			return None
 
 		if code[:3] == b'\x48\xc7\xc0' and code[3:7] in bad_imm: # mov rax, -ENOSYS/-EINVAL
-			if sz == 8  and code[7] == 0xc3: return True # ret
-			if sz == 9  and code[7] == 0xeb: return True # jmp rel8
-			if sz == 12 and code[7] == 0xe9: return True # jmp rel32
-		return False
+			if sz == 8  and code[7] == 0xc3: return code # ret
+			if sz == 9  and code[7] == 0xeb: return code # jmp rel8
+			if sz == 12 and code[7] == 0xe9: return code # jmp rel32
+		return None
 
 class ArchArm(Arch):
 	name = 'arm'
@@ -621,17 +641,22 @@ class ArchArm(Arch):
 		# E.g. v5.18 asmlinkage long sys_arm_fadvise64_64(...)
 		return noprefix(name, 'arm_')
 
-	def is_dummy_syscall(self, code: bytes) -> bool:
-		# Match the following code exactly with either #21 (EINVAL-1) or #37
-		# (ENOSYS-1) as immediate for MVN:
+	def _dummy_syscall_code(self, sc: Syscall, vmlinux: ELF) -> Optional[bytes]:
+		# Match the following code exactly with either #21 (EINVAL - 1) or #37
+		# (ENOSYS - 1) as immediate for MVN:
 		#
 		#     f06f 0015    mvn.w   r0, #21
 		#     4770         bx      lr
 		#
-		return (
-			code == b'\x6f\xf0\x15\x00\x70\x47'    # return -EINVAL
-			or code == b'\x6f\xf0\x25\x00\x70\x47' # return -ENOSYS
-		)
+		# Taken from sys_fork on v5.0 multi_v7_defconfig with MMU=n.
+		#
+		if sc.symbol.size != 6:
+			return None
+
+		code = vmlinux.read_symbol(sc.symbol)
+		if code in (b'\x6f\xf0\x15\x00\x70\x47', b'\x6f\xf0\x25\x00\x70\x47'):
+			return code
+		return None
 
 class ArchArm64(Arch):
 	# NOTE: this arch only exists since kernel v3.7

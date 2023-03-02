@@ -394,45 +394,49 @@ class Kernel:
 		for sc in syscalls:
 			file, line, good = sc.file, sc.line, sc.good_location
 
-			if not good and not sc.esoteric:
-				# If we got to this point the location is still not "good",
-				# chances are that this syscall is just a dummy function that
-				# only does `return -ENOSYS`.
-				# We can filter those out on archs for which we have
+			if not sc.esoteric:
+				# Some syscalls are just a dummy function that does
+				# `return -ENOSYS` or some other error, meaning that the syscall
+				# is not actually implemented, even if present inthe syscall
+				# table. We can filter those out on archs for which we have
 				# .is_dummy_syscall() implemented, but we're not guaranteed to
 				# catch everything. For example, .is_dummy_syscall() is useless
 				# if the symbol has bad/zero size. Unless we check sources, we
 				# can always have false positives even after this step.
-				code = self.vmlinux.read_symbol(sc.symbol)
-
-				if code and self.arch.is_dummy_syscall(code):
-					logging.info('Syscall %s (%s) is not actually implemented, '
-						'machine code: %s', sc.name, sc.symbol.name, code.hex())
+				if self.arch.is_dummy_syscall(sc, self.vmlinux):
 					continue
 
-			if not good and not sc.esoteric and file is not None:
-				if file.match('**/kernel/sys_ni.c'):
-					# If we got to this point the location is still not "good"
-					# and points to sys_ni.c even after adjusting/grepping.
-					# Assume the syscall is not implemented. Granted, this could
-					# in theory lead to false negatives, but I did not encounter
-					# one yet. Since we are grepping the source code this
-					# should NOT happen for implemented syscalls. Nonetheless
-					# warn about it, so we can double check and make sure
-					# everything is fine.
-					logging.warn('Assuming %s is not implemented as it points '
-						'to %s:%d after adjustments', sc.name, self.__rel(file), line)
-					continue
+				if not good and file is not None:
+					if file.match('**/kernel/sys_ni.c'):
+						# If we got to this point the location is still not
+						# "good" and points to sys_ni.c even after
+						# adjusting/grepping. Assume the syscall is not
+						# implemented. Granted, this could in theory lead to
+						# false negatives, but I did not encounter one yet.
+						# Since we are grepping the source code this should NOT
+						# happen for implemented syscalls. Nonetheless warn
+						# about it, so we can double check and make sure
+						# everything is fine.
+						logging.warn('Assuming %s is not implemented as it '
+							'points to %s:%d after adjustments', sc.name,
+							self.__rel(file), line)
+						continue
 
-				if self.kdir:
-					if file.match('*.S'):
-						hint = ' (implemented in asm?)'
-					elif file.match('*.c'):
-						hint = ' (normal function w/o asmlinkage?)'
-					else:
-						hint = ''
+					if self.kdir:
+						if file.match('*.S'):
+							hint = ' (implemented in asm?)'
+						elif file.match('*.c'):
+							hint = ' (normal function w/o asmlinkage?)'
+						else:
+							hint = ''
 
-					bad_loc_info.append((sc.name, sc.symbol.name, self.__rel(file), str(line), hint))
+						bad_loc_info.append((
+							sc.name,
+							sc.symbol.name,
+							self.__rel(file),
+							str(line),
+							hint
+						))
 
 			if file is None and self.can_extract_location_info:
 				no_loc_info.append((sc.name, sc.symbol.name))
