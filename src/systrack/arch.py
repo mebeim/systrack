@@ -621,6 +621,18 @@ class ArchArm(Arch):
 		# E.g. v5.18 asmlinkage long sys_arm_fadvise64_64(...)
 		return noprefix(name, 'arm_')
 
+	def is_dummy_syscall(self, code: bytes) -> bool:
+		# Match the following code exactly with either #21 (EINVAL-1) or #37
+		# (ENOSYS-1) as immediate for MVN:
+		#
+		#     f06f 0015    mvn.w   r0, #21
+		#     4770         bx      lr
+		#
+		return (
+			code == b'\x6f\xf0\x15\x00\x70\x47'    # return -EINVAL
+			or code == b'\x6f\xf0\x25\x00\x70\x47' # return -ENOSYS
+		)
+
 class ArchArm64(Arch):
 	# NOTE: this arch only exists since kernel v3.7
 	name = 'arm64'
