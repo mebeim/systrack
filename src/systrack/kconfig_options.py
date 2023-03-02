@@ -142,7 +142,9 @@ KCONFIG_MORE_SYSCALLS = VersionedDict((
 	(VERSION_ZERO, (5,5)      , 'SYSCTL_SYSCALL=y'     , ['PROC_SYSCTL=y']),
 	((3,15)      , VERSION_INF, 'SYSFS_SYSCALL=y'      , []),
 	(VERSION_ZERO, VERSION_INF, 'SYSVIPC=y'            , []),
-	(VERSION_ZERO, VERSION_INF, 'UID16=y'              , []),
+	# NOTE: MIPS does not define HAVE_UID16, we'll get a warning log when trying
+	# to enable UID16, but that's fine.
+	(VERSION_ZERO, (2,6,16)   , 'UID16=y'              , []),
 	((2,6,16)    , VERSION_INF, 'UID16=y'              , ['EXPERT=y', 'HAVE_UID16=y', 'MULTIUSER=y']),
 	((4,3)       , VERSION_INF, 'USERFAULTFD=y'        , ['MMU=y']),
 	((3,15)      , VERSION_INF, 'USELIB=y'             , []),
