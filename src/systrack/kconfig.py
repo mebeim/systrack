@@ -8,7 +8,7 @@
 
 import logging
 from pathlib import Path
-from typing import Tuple, List, Dict
+from typing import Tuple, List, Dict, Iterable
 
 from .kconfig_options import *
 from .utils import ensure_command
@@ -47,7 +47,7 @@ def parse_config(config_file: Path) -> Dict[str,str]:
 	return config
 
 # TODO: check if the options were set correctly?
-def edit_config(kdir: Path, config_file: Path, options: List[str]):
+def edit_config(kdir: Path, config_file: Path, options: Iterable[str]):
 	assert len(options) >= 1
 
 	args = []
@@ -70,9 +70,10 @@ def edit_config(kdir: Path, config_file: Path, options: List[str]):
 def edit_config_check_deps(kdir: Path, config_file: Path, options: Dict[str,List[str]]):
 	toset = dict(map(lambda x: x.split('=', 1), options))
 	config = parse_config(config_file)
-	good = []
 
 	for opt, deps in options.items():
+		err = False
+
 		for dep in deps:
 			dep_name, dep_wanted = dep.split('=', 1)
 			dep_actual = toset.get(dep_name) or config.get(dep_name)
@@ -85,17 +86,13 @@ def edit_config_check_deps(kdir: Path, config_file: Path, options: Dict[str,List
 
 			if dep_actual != dep_wanted:
 				if dep_actual is None:
-					# In theory if we want =n but we have undef it should be ok,
-					# but log it in any case.
-					logging.warn(f'CONFIG_{opt} wants CONFIG_{dep_name}='
-						f'{dep_wanted}, which is undefined. Is the default ok?')
+					if dep_wanted == 'n':
+						# It's OK if we want =n but we have undef
+						logging.warn(f'CONFIG_{opt} wants CONFIG_{dep_name}='
+							f'{dep_wanted}, which is undefined. Is the default ok?')
 				else:
 					logging.error(f'CONFIG_{opt} wants CONFIG_{dep_name}='
 						f'{dep_wanted}, but have CONFIG_{dep_name}={dep_actual}'
 						' instead!')
-				break
 
-		good.append(opt)
-
-	if good:
-		edit_config(kdir, config_file, good)
+	edit_config(kdir, config_file, options.keys())
