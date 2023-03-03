@@ -395,7 +395,9 @@ class ArchX86(Arch):
 			self.kconfig.add((2,6,15)    , (2,6,29)   , 'NUMA=y', ['SMP=y'])
 			self.kconfig.add((2,6,29)    , VERSION_INF, 'NUMA=y', ['SMP=y'])
 			# pkey_alloc, pkey_free, pkey_mprotect
-			self.kconfig.add((4,6)       , VERSION_INF, 'X86_INTEL_MEMORY_PROTECTION_KEYS=y', [])
+			#   NOTE: in theory depends on (CPU_SUP_INTEL || CPU_SUP_AMD) but we
+			#   are pretty sure that CPU_SUP_INTEL will be =y
+			self.kconfig.add((4,6)       , VERSION_INF, 'X86_INTEL_MEMORY_PROTECTION_KEYS=y', ['X86_64=y', 'CPU_SUP_INTEL=y'])
 
 	@staticmethod
 	def match(vmlinux: ELF) -> Optional[Tuple[Type['Arch'],bool,List[str]]]:
