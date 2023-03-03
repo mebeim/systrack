@@ -354,10 +354,11 @@ class ArchX86(Arch):
 			self.config_target    = 'i386_defconfig'
 
 			# vm86 (x86 only, 32-bit only, no compat support in 64-bit kernels)
-			self.kconfig.add((2,6,16), (2,6,18)   , 'VM86=y', ['X86=y', 'EMBEDDED=y']),
-			self.kconfig.add((2,6,18), (2,6,24)   , 'VM86=y', ['EMBEDDED=y']),
-			self.kconfig.add((2,6,24), (4,3)      , 'VM86=y', ['X86_32=y', 'EXPERT=y']),
-			self.kconfig.add((4,3)   , VERSION_INF, 'VM86=y', []),
+			self.kconfig.add((2,6,16), (2,6,18)   , 'VM86=y'           , ['X86=y', 'EMBEDDED=y']),
+			self.kconfig.add((2,6,18), (2,6,24)   , 'VM86=y'           , ['EMBEDDED=y']),
+			self.kconfig.add((2,6,24), (4,3)      , 'VM86=y'           , ['X86_32=y', 'EXPERT=y']),
+			self.kconfig.add((4,3)   , VERSION_INF, 'X86_LEGACY_VM86=y', ['X86_32=y']),
+			self.kconfig.add((4,3)   , VERSION_INF, 'X86_LEGACY_VM86=y', ['X86_32=y']),
 			# Needed for NUMA=y
 			self.kconfig.add(VERSION_ZERO, VERSION_INF, 'NOHIGHMEM=n', [])
 			self.kconfig.add(VERSION_ZERO, VERSION_INF, 'HIGHMEM4G=n', [])

@@ -334,8 +334,10 @@ KCONFIG_SYSCALL_DEPS = VersionedDict((
 	(VERSION_ZERO, VERSION_INF, 'setgroups16'            , 'UID16'                           ), # legacy
 	(VERSION_ZERO, VERSION_INF, 'userfaultfd'            , 'USERFAULTFD'                     ),
 	(VERSION_ZERO, VERSION_INF, 'uselib'                 , 'USELIB'                          ), # obsolete (32bit only?)
-	(VERSION_ZERO, VERSION_INF, 'vm86old'                , 'VM86'                            ), # 32-bit only
-	(VERSION_ZERO, VERSION_INF, 'vm86'                   , 'VM86'                            ), # 32-bit only
+	(VERSION_ZERO, (4,3)      , 'vm86old'                , 'VM86'                            ), # x86 32-bit only
+	(VERSION_ZERO, (4,3)      , 'vm86'                   , 'VM86'                            ), # x86 32-bit only
+	((4,3)       , VERSION_INF, 'vm86old'                , 'X86_LEGACY_VM86'                 ), # x86 32-bit only, legacy
+	((4,3)       , VERSION_INF, 'vm86'                   , 'X86_LEGACY_VM86'                 ), # x86 32-bit only, legacy
 	(VERSION_ZERO, VERSION_INF, 'pkey_alloc'             , 'X86_INTEL_MEMORY_PROTECTION_KEYS'), # x86 only
 	(VERSION_ZERO, VERSION_INF, 'pkey_free'              , 'X86_INTEL_MEMORY_PROTECTION_KEYS'), # x86 only
 	(VERSION_ZERO, VERSION_INF, 'pkey_mprotect'          , 'X86_INTEL_MEMORY_PROTECTION_KEYS'), # x86 only
