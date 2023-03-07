@@ -1,6 +1,5 @@
 <!DOCTYPE html>
-
-<html>
+<html lang="en">
 	<head>
 		<title>Linux {{kernel_version_tag}} {{arch}} {{abi}} syscall table</title>
 		<meta charset="UTF-8">
@@ -29,7 +28,7 @@
 					<td>{{sc.symbol.name}}</td>
 	# if sc.file and sc.line is not none
 		# if not sc.good_location
-					<td class="bad" title="This syscall definition is not standard, the identified location may be inaccurate">
+					<td class="bad" title="The identified location may be inaccurate (non-standard definition or missing kernel sources)">
 		# elif sc.grepped_location
 					<td class="bad" title="This syscall definition was found through grepping, the identified location may be inaccurate">
 		# else
