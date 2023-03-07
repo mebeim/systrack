@@ -7,3 +7,6 @@ VERSION_HELP = f'''\
 Systrack version {VERSION}
 {VERSION_COPY}\
 '''
+
+if __name__ == '__main__':
+	print(VERSION)
