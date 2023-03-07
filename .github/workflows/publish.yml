@@ -1,0 +1,31 @@
+name: Publish to PyPI
+
+on:
+  release:
+    types:
+      - published
+
+# Allow only one concurrent job
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: hatch
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Ensure matching version and release tag
+        run: test v"$(python3 src/systrack/version.py)" = "${{github.ref_name}}"
+      - name: Install build dependencies
+        run: python3 -m pip install --upgrade build hatch
+      - name: Build wheel and sdist
+        run: hatch build
+      - name: Publish to PyPI
+        run: hatch publish --no-prompt
+        env:
+          HATCH_INDEX_USER: __token__
+          HATCH_INDEX_AUTH: ${{secrets.HATCH_INDEX_AUTH}}
