@@ -1,6 +1,20 @@
 Systrack changelog
 ==================
 
+v0.2.1
+------
+
+Improvements:
+
+- Make syscall symbol preference more consistent (in particular, stop mixing
+  `__se_sys_xxx` and `sys_xxx` when possible).
+- Achieve W3C compliance for HTML output format.
+
+Bug fixes:
+
+- x86: correct wrong syscall numbers for x32 ABI, they should all be ORed with
+  `0x40000000` (`__X32_SYSCALL_BIT`).
+
 v0.2
 ----
 
