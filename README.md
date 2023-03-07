@@ -1,6 +1,11 @@
 Systrack
 ========
 
+[![License][license-badge]](./LICENSE)
+[![GitHub actions workflow status][actions-badge]][actions-link]
+[![PyPI version][pypi-badge]][pypi-systrack]
+[![PyPI downloads][pypi-badge2]][pypi-systrack]
+
 <img align="left" width="150" height="150" src="https://raw.githubusercontent.com/mebeim/systrack/master/assets/logo.png" alt="Systrack logo"></img>
 
 **See [mebeim/linux-syscalls](https://github.com/mebeim/linux-syscalls) for live syscall tables powered by Systrack**.
@@ -111,6 +116,11 @@ Limitations
 
 *Copyright &copy; 2023 Marco Bonelli. Licensed under the GNU General Public License v3.0.*
 
+[license-badge]: https://img.shields.io/github/license/mebeim/systrack?color=blue
+[actions-badge]: https://img.shields.io/github/actions/workflow/status/mebeim/systrack/publish.yml?event=release&label=publish
+[actions-link]:  https://github.com/mebeim/linux-syscalls/actions
+[pypi-badge]:    https://img.shields.io/pypi/v/systrack
+[pypi-badge2]:   https://img.shields.io/pypi/dm/systrack
 [pypi-systrack]: https://pypi.org/project/systrack/
 [pypi-hatch]:    https://pypi.org/project/hatch
 [ripgrep]:       https://github.com/BurntSushi/ripgrep
