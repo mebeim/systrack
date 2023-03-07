@@ -92,7 +92,7 @@ def output_syscalls_html(kernel: Kernel):
 		eprint('Install the systrack[html] or systrack[full] package through pip.')
 		sys.exit(1)
 
-	env = Environment(loader=PackageLoader('systrack'), line_statement_prefix='#')
+	env = Environment(loader=PackageLoader('systrack'), line_statement_prefix='#', autoescape=True)
 	template = env.get_template('syscall_table.html')
 	max_args = max(len(s.signature) for s in kernel.syscalls if s.signature is not None)
 
