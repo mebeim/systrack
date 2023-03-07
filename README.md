@@ -16,8 +16,20 @@ and works best at analyzing kernels that it has configured and built by itself.
 Installation
 ------------
 
-Install through Pip with `pip install systrack`. For HTML output support,
-install `systrack[html]`, this will also install the needed dependencies.
+Systrack is [available on PyPI][pypi-systrack], it requires Python 3.6+ and is
+installable through Pip:
+
+```bash
+pip install systrack        # Base version with no dependencies
+pip install systrack[html]  # + HTML output support
+```
+
+Building and installaing from source requires [`hatch`][pypi-hatch]:
+
+```bash
+hatch build
+pip install dist/systrack-XXX.whl
+```
 
 Usage
 -----
@@ -63,6 +75,9 @@ Runtime dependencies
 - Optional: `addr2line` (from GNU binutils) is used to extract location
   information from DWARF debug info (if available). Without this program,
   Systrack will not output any information about syscall definition locations.
+- Optional: if available, the `rg` ([ripgrep][ripgrep]) command is used for much
+  faster recursive grepping of syscall definition locations within kernel
+  sources when needed. Otherwise, slower pure-Python code is used.
 - Optional: the `jinja2` Python package, which can be either installed
   separately or automatically (`pip install systrack[html]`) is used to output
   interactive HTML pages with a sortable table, links and more. This is the
@@ -95,3 +110,7 @@ Limitations
 ---
 
 *Copyright &copy; 2023 Marco Bonelli. Licensed under the GNU General Public License v3.0.*
+
+[pypi-systrack]: https://pypi.org/project/systrack/
+[pypi-hatch]:    https://pypi.org/project/hatch
+[ripgrep]:       https://github.com/BurntSushi/ripgrep
