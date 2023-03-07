@@ -182,7 +182,9 @@ class Arch(ABC):
 	@abstractmethod
 	def preferred_symbol(self, a: Symbol, b: Symbol) -> Symbol:
 		'''Decide which symbol should be preferred when multiple syscall symbols
-		point to the same virtual address.
+		point to the same virtual address. By default, just prefer symbols with
+		the classic "sys_" prefix over anything else. Subclesses can override
+		this to implement their own preferences.
 
 		For example, on x86-64 with IA32 emulation support, __x64_sys_getpid and
 		__ia32_sys_getpid point to the same vaddr. We prefer __x64_sys_getpid if
@@ -194,7 +196,7 @@ class Arch(ABC):
 		same vaddr, they are in fact the same function, and the location
 		information will also be correct regardless of which one is picked.
 		'''
-		pass
+		return a if a.name.startswith('sys_') else b
 
 	def symbol_is_ni_syscall(self, sym: Symbol) -> bool:
 		'''Determine whether the symbol name identifies the special
@@ -445,19 +447,23 @@ class ArchX86(Arch):
 		if self.abi == 'ia32':
 			if self.__is_ia32(na): return a
 			if self.__is_ia32(nb): return b
-			if not nb.islower(): return a
+			if self.__is_x64(na): return a
+			if self.__is_x64(nb): return b
 			if not na.islower(): return b
-			return a if self.__is_x64(na) else b
+			if not nb.islower(): return a
+			return super().preferred_symbol(a, b)
 
 		if self.abi == 'x32':
 			if self.__is_x32(na): return a
 			if self.__is_x32(nb): return b
 
-		if self.__is_ia32(nb): return a
+		if self.__is_x64(na): return a
+		if self.__is_x64(nb): return b
 		if self.__is_ia32(na): return b
-		if not nb.islower(): return a
+		if self.__is_ia32(nb): return a
 		if not na.islower(): return b
-		return a if self.__is_x64(na) else b
+		if not nb.islower(): return a
+		return super().preferred_symbol(a, b)
 
 	def skip_syscall(self, sc: Syscall) -> bool:
 		# Syscalls 512 through 547 are historically misnumbered and x32 only,
@@ -630,9 +636,7 @@ class ArchArm(Arch):
 		c = self.prefer_compat(a, b)
 		if c is not None:
 			return c
-
-		# Just prefer symbols starting with the classic "sys_"
-		return a if a.name.startswith('sys_') else b
+		return super().preferred_symbol(a, b)
 
 	def translate_syscall_symbol_name(self, sym_name: str) -> str:
 		sym_name = super().translate_syscall_symbol_name(sym_name)
@@ -717,7 +721,9 @@ class ArchArm64(Arch):
 			return c
 
 		# See commit 4378a7d4be30ec6994702b19936f7d1465193541
-		return a if a.name.startswith('__arm64_') else b
+		if a.name.startswith('__arm64_'): return a
+		if b.name.startswith('__arm64_'): return b
+		return super().preferred_symbol(a, b)
 
 	def normalize_syscall_name(self, name: str) -> str:
 		name = super().normalize_syscall_name(name)
@@ -820,9 +826,7 @@ class ArchMips(Arch):
 		c = self.prefer_compat(a, b)
 		if c is not None:
 			return c
-
-		# Just prefer symbols starting with the classic "sys_"
-		return a if a.name.startswith('sys_') else b
+		return super().preferred_symbol(a, b)
 
 	def normalize_syscall_name(self, name: str) -> str:
 		name = super().normalize_syscall_name(name)

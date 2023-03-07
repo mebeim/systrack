@@ -260,25 +260,21 @@ class Kernel:
 		# for convenience.
 		for sym in self.vmlinux.symbols.values():
 			vaddr = sym.vaddr
-			if vaddr not in seen or sym in ni_syscalls:
+			if vaddr not in seen:
 				continue
 
 			other = symbols_by_vaddr.get(vaddr)
+			if sym == other:
+				continue
 
 			if other is not None:
-				if other in ni_syscalls:
-					if sym in ni_syscalls:
-						# Not really meaningful, but still prefer the right
-						# prefix for ni_syscall too.
-						symbols_by_vaddr[vaddr] = self.arch.preferred_symbol(sym, other)
-						continue
-
-					# Don't allow other symbols to "override" a ni_syscall.
+				if other in ni_syscalls and sym not in ni_syscalls:
+					# Don't allow other symbols to "override" a ni_syscall
 					logging.debug('Discarding alias for %s: %s', other.name, sym.name)
 					continue
 
 				pref = self.arch.preferred_symbol(sym, other)
-				sym, other = pref, other if pref is sym else sym
+				sym, other = pref, (other if pref is sym else sym)
 
 				if high_verbosity():
 					logging.debug('Preferring %s over %s', pref.name, other.name)

@@ -21,20 +21,16 @@ class E_MACHINE(IntEnum):
 class E_FLAGS(IntEnum):
 	EF_ARM_EABI_MASK = 0xff000000
 
-Section  = namedtuple('Section', ('vaddr', 'off', 'size'))
+Section = namedtuple('Section', ('vaddr', 'off', 'size'))
+_Symbol = namedtuple('_Symbol', ('vaddr', 'real_vaddr', 'size', 'type', 'name'))
 
-class Symbol:
+# NOTE: other code may assume that Symbol acts like a tuple. Think twice about
+# making this a full-fledged class and not a subclass of namedtuple. Classes are
+# not hashable and two classes only compare equal if they are both the exact
+# same instance.
+class Symbol(_Symbol):
 	'''Class representing an ELF symbol.
 	'''
-	__slots__ = ('vaddr', 'real_vaddr', 'size', 'type', 'name')
-
-	def __init__(self, vaddr: int, real_vaddr: int, size: int, typ: str, name: str):
-		self.vaddr      = vaddr
-		self.real_vaddr = real_vaddr
-		self.size       = size
-		self.type       = typ
-		self.name       = name
-
 	def __repr__(s):
 		if s.real_vaddr == s.vaddr:
 			return f'Symbol("{s.name}" at 0x{s.vaddr:x}, type={s.type}, size=0x{s.size:x})'
@@ -128,18 +124,19 @@ class ELF:
 				continue
 
 			vaddr, sz, typ, name = match.groups()
-			vaddr = int(vaddr, 16)
-			sym = Symbol(vaddr, vaddr, int(sz), typ, name)
+			vaddr = real_vaddr = int(vaddr, 16)
+
+			# Unaligned vaddr on ARM 32-bit means the function code is in
+			# Thumb mode. Nonetheless, the actual code is aligned, so the
+			# real vaddr is a multiple of 2.
+			if self.e_machine == E_MACHINE.EM_ARM and typ == 'FUNC' and vaddr & 1:
+				real_vaddr &= 0xfffffffe
+
+			sym = Symbol(vaddr, real_vaddr, int(sz), typ, name)
 			syms[sym.name] = sym
 
 			if typ == 'FUNC':
 				funcs[sym.name] = sym
-
-				# Unaligned vaddr on ARM 32-bit means the function code is in
-				# Thumb mode. Nonetheless, the actual code is aligned, so the
-				# real vaddr is a multiple of 2.
-				if self.e_machine == E_MACHINE.EM_ARM and vaddr & 1:
-					sym.real_vaddr = vaddr & 0xfffffffe
 
 		self.__symbols = syms
 		self.__functions = funcs
