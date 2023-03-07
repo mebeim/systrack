@@ -101,7 +101,9 @@ class Arch(ABC):
 	syscall_table_name: str = 'sys_call_table'
 
 	# Base syscall number (actual syscall number is base + idx in syscall table)
-	# NOTE: the arch_syscall_addr() function can be useful to look at for this
+	# NOTE: easiest way to check this is to just compile a binary that makes a
+	# raw syscall for the right arch/ABI. The arch_syscall_addr() kernel
+	# function can also be useful to inspect.
 	syscall_num_base: int = 0
 
 	# Syscall number destination (register name, None if no register is used,
@@ -378,8 +380,12 @@ class ArchX86(Arch):
 
 			if self.abi == 'ia32':
 				self.syscall_table_name = 'ia32_sys_call_table'
-			elif self.abi == 'x32' and self.kernel_version >= (5,4):
-				self.syscall_table_name = 'x32_sys_call_table'
+			elif self.abi == 'x32':
+				# x32 syscalls have this bit set (__X32_SYSCALL_BIT)
+				self.syscall_num_base = 0x40000000
+
+				if self.kernel_version >= (5,4):
+					self.syscall_table_name = 'x32_sys_call_table'
 
 			# x86-64 supports all ABIs: ia32, x64, x32. Enable all of them, we
 			# will be able to extract the right syscall table regardless.
