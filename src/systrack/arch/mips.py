@@ -3,6 +3,7 @@ from typing import Tuple, List, Type, Optional
 from ..elf import Symbol, ELF, E_MACHINE
 from ..utils import VersionedDict, noprefix
 from ..kconfig import VERSION_ZERO, VERSION_INF
+from ..type_hints import KernelVersion
 
 from .arch_base import Arch
 
@@ -20,7 +21,7 @@ class ArchMips(Arch):
 		(VERSION_ZERO, VERSION_INF, 'NUMA=y'   , ['SYS_SUPPORTS_NUMA=y'])
 	))
 
-	def __init__(self, kernel_version: Tuple[int,int,int], abi: str, bits32: bool = False):
+	def __init__(self, kernel_version: KernelVersion, abi: str, bits32: bool = False):
 		super().__init__(kernel_version, abi, bits32)
 		assert self.abi in ('o32', 'n32', 'n64')
 

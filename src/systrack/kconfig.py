@@ -12,17 +12,18 @@ from typing import Tuple, List, Dict, Iterable
 
 from .kconfig_options import *
 from .utils import ensure_command
+from .type_hints import KernelVersion
 
-def kconfig_debugging(kernel_version: Tuple[int,int,int]) -> Dict[str,List[str]]:
+def kconfig_debugging(kernel_version: KernelVersion) -> Dict[str,List[str]]:
 	return KCONFIG_DEBUGGING[kernel_version]
 
-def kconfig_compatibility(kernel_version: Tuple[int,int,int]) -> Dict[str,List[str]]:
+def kconfig_compatibility(kernel_version: KernelVersion) -> Dict[str,List[str]]:
 	return KCONFIG_COMPATIBILITY[kernel_version]
 
-def kconfig_more_syscalls(kernel_version: Tuple[int,int,int]) -> Dict[str,List[str]]:
+def kconfig_more_syscalls(kernel_version: KernelVersion) -> Dict[str,List[str]]:
 	return KCONFIG_MORE_SYSCALLS[kernel_version]
 
-def kconfig_syscall_deps(syscall_name: str, kernel_version: Tuple[int,int,int]) -> str:
+def kconfig_syscall_deps(syscall_name: str, kernel_version: KernelVersion) -> str:
 	opt = KCONFIG_SYSCALL_DEPS[kernel_version].get(syscall_name)
 	if opt is None:
 		return None

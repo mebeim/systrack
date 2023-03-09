@@ -21,6 +21,7 @@ from .signature import extract_syscall_signatures
 from .kconfig import edit_config, edit_config_check_deps
 from .kconfig import kconfig_more_syscalls, kconfig_debugging
 from .kconfig import kconfig_compatibility, kconfig_syscall_deps
+from .type_hints import KernelVersion
 
 class KernelVersionError(RuntimeError):
 	pass
@@ -77,7 +78,7 @@ class Kernel:
 				'provided vmlinux')
 
 	@staticmethod
-	def version_from_str(s: str) -> Tuple[int,int,int]:
+	def version_from_str(s: str) -> KernelVersion:
 		m = re.match(r'(\d+)\.(\d+)(\.(\d+))?', s)
 		if not m:
 			return None
@@ -86,7 +87,7 @@ class Kernel:
 		return (a, b) if c is None else (a, b, int(c))
 
 	@staticmethod
-	def version_from_banner(banner: Union[str,bytes]) -> Tuple[int,int,int]:
+	def version_from_banner(banner: Union[str,bytes]) -> KernelVersion:
 		if isinstance(banner, bytes):
 			banner = banner.decode()
 
@@ -94,7 +95,7 @@ class Kernel:
 			return None
 		return Kernel.version_from_str(banner[14:])
 
-	def __version_from_vmlinux(self) -> Tuple[int,int,int]:
+	def __version_from_vmlinux(self) -> KernelVersion:
 		banner = self.vmlinux.symbols.get('linux_banner')
 		if banner is None:
 			return None
@@ -106,12 +107,12 @@ class Kernel:
 
 		return self.version_from_banner(banner)
 
-	def __version_from_make(self) -> Tuple[int,int,int]:
+	def __version_from_make(self) -> KernelVersion:
 		v = ensure_command('make kernelversion', self.kdir)
 		return self.version_from_str(v)
 
 	@property
-	def version(self) -> Tuple[int,int,int]:
+	def version(self) -> KernelVersion:
 		if self.__version is None:
 			if self.vmlinux:
 				self.__version = self.__version_from_vmlinux()

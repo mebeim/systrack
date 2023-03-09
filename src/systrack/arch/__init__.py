@@ -2,6 +2,7 @@ import logging
 from typing import Optional, Type, Tuple, List
 
 from ..elf import ELF
+from ..type_hints import KernelVersion
 
 from .all import *
 from .arch_base import Arch
@@ -72,7 +73,7 @@ Supported architectures and ABIs (values are case-insensitive):
     [4] AArch64 kernel with compat AArch32 support.
 '''
 
-def arch_from_name(name: str, kernel_version: Tuple[int,int,int]) -> Arch:
+def arch_from_name(name: str, kernel_version: KernelVersion) -> Arch:
 	'''Instantiate and return the right Arch subclass given a human-friendly
 	name (--arch). The name should be already validated.
 	'''
