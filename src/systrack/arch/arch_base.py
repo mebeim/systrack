@@ -5,6 +5,7 @@ from typing import Tuple, List, Type, Optional
 from ..syscall import Syscall
 from ..elf import Symbol, ELF
 from ..utils import VersionedDict, VersionedList, anysuffix, noprefix, nosuffix
+from ..type_hints import KernelVersion
 
 class Arch(ABC):
 	# Directory name for this arch in the kernel source, under arch/
@@ -24,7 +25,7 @@ class Arch(ABC):
 	compat: bool = False
 
 	# Kernel version that we are intersted in analyzing
-	kernel_version: Tuple[int,int,int] = None
+	kernel_version: KernelVersion = None
 
 	# Make target to build for the base config
 	config_target: str = 'defconfig'
@@ -55,7 +56,7 @@ class Arch(ABC):
 	# Additional kconfig options to set
 	kconfig: VersionedDict = VersionedDict()
 
-	def __init__(self, kernel_version: Tuple[int,int,int], abi: str, bits32: bool):
+	def __init__(self, kernel_version: KernelVersion, abi: str, bits32: bool):
 		self.kernel_version = kernel_version
 		self.bits32 = bits32
 		self.abi = abi # ABI to inspect/build for

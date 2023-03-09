@@ -4,6 +4,7 @@ from ..syscall import Syscall
 from ..elf import Symbol, ELF, E_MACHINE, E_FLAGS
 from ..utils import VersionedDict, VersionedList, noprefix, nosuffix
 from ..kconfig import VERSION_ZERO, VERSION_INF
+from ..type_hints import KernelVersion
 
 from .arch_base import Arch
 
@@ -23,7 +24,7 @@ class ArchArm(Arch):
 		# No NUMA support => no mbind, migrate_pages, {get,set}_mempolicy
 	))
 
-	def __init__(self, kernel_version: Tuple[int,int,int], abi: str, bits32: bool = True):
+	def __init__(self, kernel_version: KernelVersion, abi: str, bits32: bool = True):
 		assert bits32, f'{self.__class__.__name__} is 32-bit only'
 		super().__init__(kernel_version, abi, True)
 		assert self.bits32 and self.abi_bits32

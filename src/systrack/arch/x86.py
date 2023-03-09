@@ -4,6 +4,7 @@ from ..syscall import Syscall
 from ..elf import Symbol, ELF, E_MACHINE
 from ..utils import VersionedDict, noprefix
 from ..kconfig import VERSION_ZERO, VERSION_INF
+from ..type_hints import KernelVersion
 
 from .arch_base import Arch
 
@@ -25,7 +26,7 @@ class ArchX86(Arch):
 		((4,3)   , VERSION_INF, 'MODIFY_LDT_SYSCALL=y', []),
 	))
 
-	def __init__(self, kernel_version: Tuple[int,int,int], abi: str, bits32: bool = False):
+	def __init__(self, kernel_version: KernelVersion, abi: str, bits32: bool = False):
 		super().__init__(kernel_version, abi, bits32)
 		assert self.abi in ('x64', 'ia32', 'x32')
 

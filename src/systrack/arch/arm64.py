@@ -3,6 +3,7 @@ from typing import Tuple, List, Type, Optional
 from ..elf import Symbol, ELF, E_MACHINE
 from ..utils import VersionedDict, noprefix
 from ..kconfig import VERSION_INF
+from ..type_hints import KernelVersion
 
 from .arch_base import Arch
 
@@ -24,7 +25,7 @@ class ArchArm64(Arch):
 		((4,7) , VERSION_INF, 'NUMA=y'      , []),
 	))
 
-	def __init__(self, kernel_version: Tuple[int,int,int], abi: str, bits32: bool = False):
+	def __init__(self, kernel_version: KernelVersion, abi: str, bits32: bool = False):
 		assert not bits32, f'{self.__class__.__name__} is 64-bit only'
 		assert kernel_version >= (3,7), 'Linux only supports arm64 from v3.7'
 		super().__init__(kernel_version, abi, False)
