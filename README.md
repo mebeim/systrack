@@ -33,7 +33,8 @@ Building and installaing from source requires [`hatch`][pypi-hatch]:
 
 ```bash
 hatch build
-pip install dist/systrack-XXX.whl
+pip install dist/systrack-XXX.whl       # Base version with no dependencies
+pip install dist/systrack-XXX.whl[html] # + HTML output support
 ```
 
 Usage
