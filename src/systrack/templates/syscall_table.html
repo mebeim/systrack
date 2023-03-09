@@ -1,13 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
 	<head>
-		<title>Linux {{kernel_version_tag}} {{arch}} {{abi}} syscall table</title>
+		<title>Linux {{kernel_version_tag}} {{arch}} {{bits}}-bit, {{'compat ' if compat else ''}}{{abi_bits}}-bit {{abi}} syscall table</title>
 		<meta charset="UTF-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<style>{% include 'syscall_table.css' %}</style>
 	</head>
 	<body>
-		<h1>Linux {{kernel_version_tag}} syscall table &#x2014; {{arch}} {{bits}}-bit, {{abi}} ABI</h1>
+		<h1>Linux {{kernel_version_tag}} syscall table</h1>
+		<h2>Architecture: {{arch}} {{bits}}-bit</h2>
+		<h2>ABI: {{'compat ' if compat else ''}}{{abi_bits}}-bit {{abi}}</h2>
 		<table>
 			<tbody>
 				<tr>

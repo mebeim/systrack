@@ -87,6 +87,9 @@ class Arch(ABC):
 	# Selected ABI
 	abi: str = None
 
+	# Whether the selected ABI is 32-bits or not
+	abi_bits32: bool = False
+
 	# Are we looking for compat syscalls (COMPACT_SYSCALL_DEFINEn)? Or, in other
 	# words, is this not the "main" ABI of the kernel we're analyzing?
 	compat: bool = False
@@ -123,7 +126,7 @@ class Arch(ABC):
 	# Additional kconfig options to set
 	kconfig: VersionedDict = VersionedDict()
 
-	def __init__(self, kernel_version: Tuple[int,int,int], abi: str, bits32: bool = False):
+	def __init__(self, kernel_version: Tuple[int,int,int], abi: str, bits32: bool):
 		self.kernel_version = kernel_version
 		self.bits32 = bits32
 		self.abi = abi # ABI to inspect/build for
@@ -340,8 +343,8 @@ class ArchX86(Arch):
 		((4,3)   , VERSION_INF, 'MODIFY_LDT_SYSCALL=y', []),
 	))
 
-	def __init__(self, *a, **kwa):
-		super().__init__(*a, **kwa)
+	def __init__(self, kernel_version: Tuple[int,int,int], abi: str, bits32: bool = False):
+		super().__init__(kernel_version, abi, bits32)
 		assert self.abi in ('x64', 'ia32', 'x32')
 
 		# i386_defconfig and x86_64_defconfig don't exist before v2.6.24: need
@@ -353,7 +356,8 @@ class ArchX86(Arch):
 
 		if self.bits32:
 			assert self.abi == 'ia32'
-			self.syscall_num_reg   = 'eax'
+			self.abi_bits32       = True
+			self.syscall_num_reg  = 'eax'
 			self.syscall_arg_regs = ('ebx', 'ecx', 'edx', 'esi', 'edi', 'ebp')
 			self.config_target    = 'i386_defconfig'
 
@@ -375,10 +379,11 @@ class ArchX86(Arch):
 			self.kconfig.add((2,6,23)    , (2,6,29)   , 'NUMA=y', ['SMP=y', 'HIGHMEM64G=y', 'EXPERIMENTAL=y'])
 			self.kconfig.add((2,6,29)    , VERSION_INF, 'NUMA=y', ['SMP=y', 'HIGHMEM64G=y', 'X86_BIGSMP=y'])
 		else:
+			self.abi_bits32       = self.abi == 'ia32'
+			self.compat           = self.abi != 'x64'
 			self.syscall_num_reg  = 'rax'
 			self.syscall_arg_regs = ('rdi', 'rsi', 'rdx', 'r10', 'r8', 'r9')
 			self.config_target    = 'x86_64_defconfig'
-			self.compat           = self.abi != 'x64'
 
 			if self.abi == 'ia32':
 				self.syscall_table_name = 'ia32_sys_call_table'
@@ -533,6 +538,8 @@ class ArchX86(Arch):
 
 class ArchArm(Arch):
 	name = 'arm'
+	bits32 = True
+	abi_bits32 = True
 
 	# These two will be set by adjust_abi(), use None as placeholder to make
 	# sure they are actually set
@@ -549,9 +556,10 @@ class ArchArm(Arch):
 		# No NUMA support => no mbind, migrate_pages, {get,set}_mempolicy
 	))
 
-	def __init__(self, *a, **kwa):
-		super().__init__(*a, **kwa)
-		self.bits32 = True
+	def __init__(self, kernel_version: Tuple[int,int,int], abi: str, bits32: bool = True):
+		assert bits32, f'{self.__class__.__name__} is 32-bit only'
+		super().__init__(kernel_version, abi, True)
+		assert self.bits32 and self.abi_bits32
 		assert self.abi in ('eabi', 'oabi')
 
 		if self.kernel_version >= (3,7):
@@ -674,6 +682,7 @@ class ArchArm(Arch):
 class ArchArm64(Arch):
 	# NOTE: this arch only exists since kernel v3.7
 	name = 'arm64'
+	bits32 = False
 
 	syscall_num_reg = 'w8'
 	syscall_arg_regs = ('x0', 'x1', 'x2', 'x3', 'x4', 'x5')
@@ -690,12 +699,15 @@ class ArchArm64(Arch):
 		((4,7) , VERSION_INF, 'NUMA=y'      , []),
 	))
 
-	def __init__(self, *a, **kwa):
-		super().__init__(*a, **kwa)
+	def __init__(self, kernel_version: Tuple[int,int,int], abi: str, bits32: bool = False):
+		assert not bits32, f'{self.__class__.__name__} is 64-bit only'
+		super().__init__(kernel_version, abi, False)
 		assert not self.bits32
+		assert self.abi in ('aarch64', 'aarch32')
 
 		if self.abi == 'aarch32':
 			self.compat = True
+			self.abi_bits32 = True
 			self.syscall_table_name = 'compat_sys_call_table'
 
 	@staticmethod
@@ -744,11 +756,12 @@ class ArchMips(Arch):
 		(VERSION_ZERO, VERSION_INF, 'NUMA=y'   , ['SYS_SUPPORTS_NUMA=y'])
 	))
 
-	def __init__(self, *a, **kwa):
-		super().__init__(*a, **kwa)
+	def __init__(self, kernel_version: Tuple[int,int,int], abi: str, bits32: bool = False):
+		super().__init__(kernel_version, abi, bits32)
 		assert self.abi in ('o32', 'n32', 'n64')
 
 		if self.abi == 'o32':
+			self.abi_bits32 = True
 			# Interestingly, man 2 syscall states: "The mips/o32 system call
 			# convention passes arguments 5 through 8 on the user stack".
 			# What syscall takes 8 arguments on MIPS o32? WTF.
@@ -758,6 +771,7 @@ class ArchMips(Arch):
 			if not self.bits32:
 				self.syscall_table_name = 'sys32_call_table'
 		else:
+			self.abi_bits32 = False
 			self.syscall_arg_regs = ('a0', 'a1', 'a2', 'a3', 'a4', 'a5')
 
 			if self.abi == 'n64':

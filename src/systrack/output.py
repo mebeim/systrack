@@ -72,6 +72,8 @@ def output_syscalls_json(kernel: Kernel):
 			},
 			'abi': {
 				'name': kernel.arch.abi,
+				'compat': kernel.arch.compat,
+				'bits': 32 if kernel.arch.abi_bits32 else 64,
 				'calling_convention': {
 					'syscall_nr': kernel.arch.syscall_num_reg,
 					'parameters': kernel.arch.syscall_arg_regs
@@ -101,6 +103,8 @@ def output_syscalls_html(kernel: Kernel):
 		arch=kernel.arch.name,
 		bits=32 if kernel.arch.bits32 else 64,
 		abi=kernel.arch.abi,
+		abi_bits=32 if kernel.arch.abi_bits32 else 64,
+		compat=kernel.arch.compat,
 		num_reg=kernel.arch.syscall_num_reg,
 		arg_regs=kernel.arch.syscall_arg_regs,
 		max_args=max_args,
