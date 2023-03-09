@@ -52,4 +52,4 @@ include = ['src/systrack/templates/*']
 packages = ['src/systrack']
 
 [tool.hatch.build.targets.sdist]
-include = ['src']
+include = ['src', 'CHANGELOG.md']
