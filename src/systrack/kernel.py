@@ -12,7 +12,7 @@ from itertools import zip_longest
 from typing import Tuple, List, Iterator, Union, Any
 
 from .elf import ELF
-from .arch import Arch
+from .arch import Arch, arch_from_name, arch_from_vmlinux
 from .syscall import Syscall, common_syscall_symbol_prefixes
 from .utils import run_command, ensure_command, VersionedDict, high_verbosity
 from .utils import maybe_rel, noprefix
@@ -60,7 +60,7 @@ class Kernel:
 			raise KernelWithoutSymbolsError('Provided vmlinux ELF has no symbols')
 
 		if self.arch_name is None:
-			m = Arch.match(self.vmlinux)
+			m = arch_from_vmlinux(self.vmlinux)
 			if m is None:
 				raise KernelArchError('Failed to detect kernel architecture/ABI')
 
@@ -70,7 +70,7 @@ class Kernel:
 
 			self.arch = arch_class(self.version, abis[0], bits32)
 		else:
-			self.arch = Arch.from_name(self.arch_name, self.version)
+			self.arch = arch_from_name(self.arch_name, self.version)
 
 		if self.vmlinux and not self.arch.matches(self.vmlinux):
 			raise KernelArchError(f'Architecture {arch_name} does not match '
