@@ -37,11 +37,16 @@ class ArchX86(Arch):
 		# self.name should reflect that too too.
 		assert self.kernel_version >= (2,6,24), 'kernel too old, sorry!'
 
+		if self.abi == 'ia32':
+			self.syscall_num_reg  = 'eax'
+			self.syscall_arg_regs = ('ebx', 'ecx', 'edx', 'esi', 'edi', 'ebp')
+		else:
+			self.syscall_num_reg  = 'rax'
+			self.syscall_arg_regs = ('rdi', 'rsi', 'rdx', 'r10', 'r8', 'r9')
+
 		if self.bits32:
 			assert self.abi == 'ia32'
 			self.abi_bits32       = True
-			self.syscall_num_reg  = 'eax'
-			self.syscall_arg_regs = ('ebx', 'ecx', 'edx', 'esi', 'edi', 'ebp')
 			self.config_target    = 'i386_defconfig'
 
 			# vm86 (x86 only, 32-bit only, no compat support in 64-bit kernels)
@@ -64,8 +69,6 @@ class ArchX86(Arch):
 		else:
 			self.abi_bits32       = self.abi == 'ia32'
 			self.compat           = self.abi != 'x64'
-			self.syscall_num_reg  = 'rax'
-			self.syscall_arg_regs = ('rdi', 'rsi', 'rdx', 'r10', 'r8', 'r9')
 			self.config_target    = 'x86_64_defconfig'
 
 			if self.abi == 'ia32':
@@ -73,7 +76,6 @@ class ArchX86(Arch):
 			elif self.abi == 'x32':
 				# x32 syscalls have this bit set (__X32_SYSCALL_BIT)
 				self.syscall_num_base = 0x40000000
-
 				if self.kernel_version >= (5,4):
 					self.syscall_table_name = 'x32_sys_call_table'
 
