@@ -48,6 +48,8 @@ class ArchArm(Arch):
 			self.syscall_num_reg = 'r7'
 		elif self.abi == 'oabi':
 			self.syscall_num_base = 0x900000
+			# No register, number passed as immediate to the SWI instruction
+			self.syscall_num_reg = 'swi <NR>'
 
 			# Building an old OABI-only kernel is annoying. Assume EABI + compat
 			# OABI (OABI_COMPAT=y) and just build with support for both ABIs.
