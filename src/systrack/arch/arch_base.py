@@ -104,7 +104,6 @@ class Arch(ABC):
 			return b if ca else a
 		return None
 
-	@abstractmethod
 	def preferred_symbol(self, a: Symbol, b: Symbol) -> Symbol:
 		'''Decide which symbol should be preferred when multiple syscall symbols
 		point to the same virtual address. By default, just prefer symbols with
