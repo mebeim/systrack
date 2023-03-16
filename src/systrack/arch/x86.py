@@ -98,7 +98,7 @@ class ArchX86(Arch):
 			self.kconfig.add((4,6)       , VERSION_INF, 'X86_INTEL_MEMORY_PROTECTION_KEYS=y', ['X86_64=y', 'CPU_SUP_INTEL=y'])
 
 	@staticmethod
-	def match(vmlinux: ELF) -> Optional[Tuple[Type['Arch'],bool,List[str]]]:
+	def match(vmlinux: ELF) -> Optional[Tuple[Type[Arch],bool,List[str]]]:
 		if vmlinux.e_machine == E_MACHINE.EM_386:
 			assert vmlinux.bits32, 'EM_386 64-bit? WAT'
 		elif vmlinux.e_machine == E_MACHINE.EM_X86_64:

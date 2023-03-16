@@ -79,7 +79,7 @@ class ArchMips(Arch):
 			self.kconfig.add(VERSION_ZERO, VERSION_INF, 'MIPS32_N32=y', [])
 
 	@staticmethod
-	def match(vmlinux: ELF) -> Optional[Tuple[Type['Arch'],bool,List[str]]]:
+	def match(vmlinux: ELF) -> Optional[Tuple[Type[Arch],bool,List[str]]]:
 		if vmlinux.e_machine != E_MACHINE.EM_MIPS:
 			return None
 

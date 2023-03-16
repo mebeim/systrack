@@ -64,6 +64,17 @@ class Arch(ABC):
 	def __repr__(s):
 		return f'{s.__class__.__name__}(name={s.name!r}, abi={s.abi!r}, compat={s.compat!r}, ...)'
 
+	# TODO: don't make this return the class too, it's redundant
+	@staticmethod
+	@abstractmethod
+	def match(vmlinux: ELF) -> Optional[Tuple[Type['Arch'],bool,List[str]]]:
+		'''Determine if the given vmlinux ELF was built for this architecture,
+		and if so return the class itself, the bitness and a list of detected
+		ABIs. This is useful to determine which Arch subclass to instantiate (if
+		any).
+		'''
+		pass
+
 	@abstractmethod
 	def matches(self, vmlinux: ELF) -> bool:
 		'''Determine whether this architecture matches the one of the provided

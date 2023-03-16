@@ -79,7 +79,7 @@ def arch_from_name(name: str, kernel_version: KernelVersion) -> Arch:
 	'''
 	return SUPPORTED_ARCHS[name](kernel_version)
 
-def arch_from_vmlinux(vmlinux: ELF) -> Optional[Tuple[Arch,bool,List[str]]]:
+def arch_from_vmlinux(vmlinux: ELF) -> Optional[Tuple[Type[Arch],bool,List[str]]]:
 	'''Determine architecture and supported ABIs from vmlinux ELF. Returns the
 	correct Arch subclass, the bitness and a list of detected ABIs.
 	'''

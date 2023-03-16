@@ -38,7 +38,7 @@ class ArchArm64(Arch):
 			self.syscall_table_name = 'compat_sys_call_table'
 
 	@staticmethod
-	def match(vmlinux: ELF) -> Optional[Tuple[Type['Arch'],bool,List[str]]]:
+	def match(vmlinux: ELF) -> Optional[Tuple[Type[Arch],bool,List[str]]]:
 		if vmlinux.e_machine != E_MACHINE.EM_AARCH64:
 			return None
 
