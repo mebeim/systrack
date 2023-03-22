@@ -49,7 +49,8 @@ def parse_config(config_file: Path) -> Dict[str,str]:
 
 # TODO: check if the options were set correctly?
 def edit_config(kdir: Path, config_file: Path, options: Iterable[str]):
-	assert len(options) >= 1
+	if not options:
+		return
 
 	args = []
 	for opt in options:
@@ -69,6 +70,9 @@ def edit_config(kdir: Path, config_file: Path, options: Iterable[str]):
 # TODO: actually check deps parsing Kconfig instead of taking an hardcoded
 # dictionary {opt: deps} which is error prone and very annoying to maintain.
 def edit_config_check_deps(kdir: Path, config_file: Path, options: Dict[str,List[str]]):
+	if not options:
+		return
+
 	toset = dict(map(lambda x: x.split('=', 1), options))
 	config = parse_config(config_file)
 
