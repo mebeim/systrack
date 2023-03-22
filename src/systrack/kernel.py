@@ -11,7 +11,7 @@ from collections import defaultdict, Counter
 from itertools import zip_longest
 from typing import Tuple, List, Iterator, Union, Any
 
-from .elf import ELF
+from .elf import ELF, Symbol, Section
 from .arch import Arch, arch_from_name, arch_from_vmlinux
 from .syscall import Syscall, common_syscall_symbol_prefixes
 from .utils import run_command, ensure_command, VersionedDict, high_verbosity
@@ -41,6 +41,8 @@ class Kernel:
 	__version_source  = None
 	__syscalls        = None
 	__backup_makefile = None
+	__long_size       = None
+	__long_pack_fmt   = None
 
 	def __init__(self, arch_name: str = None, vmlinux: Path = None,
 			kdir: Path = None, outdir: Path = None, rdir: Path = None,
@@ -67,15 +69,20 @@ class Kernel:
 
 			arch_class, bits32, abis = m
 			if len(abis) > 1:
-				raise KernelMultiABIError('Multiple ABIs supported, need to select one', arch_class, abis)
+				raise KernelMultiABIError('Multiple ABIs supported, need to '
+					'select one', arch_class, abis)
 
 			self.arch = arch_class(self.version, abis[0], bits32)
 		else:
 			self.arch = arch_from_name(self.arch_name, self.version)
 
-		if self.vmlinux and not self.arch.matches(self.vmlinux):
-			raise KernelArchError(f'Architecture {arch_name} does not match '
-				'provided vmlinux')
+		if self.vmlinux:
+			if not self.arch.matches(self.vmlinux):
+				raise KernelArchError(f'Architecture {arch_name} does not '
+					'match provided vmlinux')
+
+			self.__long_size     = (8, 4)[self.vmlinux.bits32]
+			self.__long_pack_fmt = '<>'[self.vmlinux.big_endian] + 'QL'[self.vmlinux.bits32]
 
 	@staticmethod
 	def version_from_str(s: str) -> KernelVersion:
@@ -165,7 +172,6 @@ class Kernel:
 		return maybe_rel(path, self.kdir)
 
 	def __iter_unpack_vmlinux(self, fmt: str, off: int, size: int = None) -> Iterator[Tuple[Any, ...]]:
-		fmt = '<>'[self.vmlinux.big_endian] + fmt
 		f = self.vmlinux.file
 		assert f.seek(off) == off
 
@@ -177,7 +183,47 @@ class Kernel:
 			yield from struct.iter_unpack(fmt, f.read(size))
 
 	def __iter_unpack_vmlinux_long(self, off: int, size: int = None) -> Iterator[int]:
-		yield from map(itemgetter(0), self.__iter_unpack_vmlinux('QL'[self.vmlinux.bits32], off, size))
+		yield from map(itemgetter(0), self.__iter_unpack_vmlinux(self.__long_pack_fmt, off, size))
+
+	def __unpack_syscall_table(self, tbl: Symbol, target_section: Section) -> List[int]:
+		tbl_file_off = self.vmlinux.vaddr_to_file_offset(tbl.vaddr)
+
+		# This is the section we would like the function pointers to point to,
+		# we'll warn or halt in case we find fptrs pointing outside
+		vstart = target_section.vaddr
+		vend   = vstart + target_section.size
+
+		if tbl.size > 0x80:
+			logging.info('Syscall table (%s) is %d bytes, %d entries', tbl.name,
+				tbl.size, tbl.size // self.__long_size)
+
+			vaddrs = list(self.__iter_unpack_vmlinux_long(tbl_file_off, tbl.size))
+
+			# Sanity check: ensure all vaddrs are within the target section
+			for idx, vaddr in enumerate(vaddrs):
+				if not (vstart <= vaddr < vend):
+					logging.warn('Virtual address 0x%x (%s[%d]) is outside '
+						'%s: something is off!', vaddr, syscall_table_name, idx,
+						target_section.name)
+		else:
+			# Apparently on some archs (looking at you, MIPS!) the syscall table
+			# symbol can have size 0. In this case we'll just warn the user and
+			# keep extracting vaddrs as long as they are valid, stopping at the
+			# first invalid one.
+			logging.warn('Syscall table (%s) has bad size (%d), doing my best '
+				'to figure out when to stop', syscall_table_name, tbl.size)
+
+			vaddrs = []
+			for vaddr in map(translate, self.__iter_unpack_vmlinux_long(tbl_file_off)):
+				if not (vstart <= vaddr < vend):
+					break
+
+				vaddrs.append(vaddr)
+
+			logging.info('Syscall table seems to be %d bytes, %d entries',
+				len(vaddrs) * self.__long_size, len(vaddrs))
+
+		return vaddrs
 
 	def __extract_syscalls(self) -> List[Syscall]:
 		if self.arch.bits32 != self.vmlinux.bits32:
@@ -198,6 +244,43 @@ class Kernel:
 
 		logging.debug('Syscall table: %r', tbl)
 
+		# Read and parse the syscall table unpacking all virtual addresses it
+		# contains
+
+		text = self.vmlinux.sections['.text']
+
+		if self.arch.uses_function_descriptors:
+			opd = self.vmlinux.sections.get('.opd')
+			if not opd:
+				logging.critical('Arch uses function descriptors, but vmlinux '
+					'has no .opd section!')
+				return []
+
+			descriptors = self.__unpack_syscall_table(tbl, opd)
+			text_vstart = text.vaddr
+			text_vend   = text_vstart + text.size
+			vaddrs      = []
+
+			# Translate function descriptors (one more level of indirection)
+			for desc_vaddr in descriptors:
+				vaddr = self.vmlinux.vaddr_read(desc_vaddr, self.__long_size)
+				vaddr = struct.unpack(self.__long_pack_fmt, vaddr)[0]
+
+				if not (text_vstart <= vaddr < text_vend):
+					logging.warn('Function descriptor at 0x%x points outside '
+						'.text: something is off!', desc_vaddr)
+
+				vaddrs.append(vaddr)
+		else:
+			vaddrs = self.__unpack_syscall_table(tbl, text)
+
+		if not vaddrs:
+			logging.critical('Could not extract any valid function pointer '
+				'from %s, giving up!', syscall_table_name)
+			logging.critical('Is the kernel relocatable? Relocation entries '
+				'for the syscall table are not supported.')
+			return []
+
 		# Find all ni_syscall symbols (there might be multiple) and keep track
 		# of them for later in order to detect non-implemented syscalls.
 		for sym in self.vmlinux.functions.values():
@@ -207,51 +290,6 @@ class Kernel:
 
 		if not ni_syscalls:
 			logging.critical('No ni_syscall found!')
-			return []
-
-		# Read and parse the syscall table unpacking all virtual addresses it
-		# contains
-
-		addr_size    = 4 if self.vmlinux.bits32 else 8
-		tbl_file_off = self.vmlinux.vaddr_to_file_offset(tbl.vaddr)
-		text         = self.vmlinux.sections['.text']
-		text_vstart  = text.vaddr
-		text_vend    = text_vstart + text.size
-
-		if tbl.size > 0x80:
-			logging.info('Syscall table (%s) is %d bytes, %d entries', tbl.name,
-				tbl.size, tbl.size // addr_size)
-
-			vaddrs = list(self.__iter_unpack_vmlinux_long(tbl_file_off, tbl.size))
-
-			# Sanity check: ensure all virtual addresses are within .text
-			for idx, vaddr in enumerate(vaddrs):
-				if not (text_vstart <= vaddr < text_vend):
-					logging.warn('Virtual address 0x%x (%s[%d]) is outside '
-						'.text: something is off!', vaddr, syscall_table_name, idx)
-		else:
-			# Apparently on some archs (looking at you, MIPS!) the syscall table
-			# symbol can have size 0. In this case we'll just warn the user and
-			# keep extracting vaddrs as long as they are within the .text
-			# section, stopping at the first invalid one.
-			logging.warn('Syscall table (%s) has bad size (%d), doing my best '
-				'to figure out when to stop', syscall_table_name, tbl.size)
-
-			vaddrs = []
-			for vaddr in self.__iter_unpack_vmlinux_long(tbl_file_off):
-				if not (text_vstart <= vaddr < text_vend):
-					break
-
-				vaddrs.append(vaddr)
-
-			logging.info('Syscall table seems to be %d bytes, %d entries',
-				len(vaddrs) * addr_size, len(vaddrs))
-
-		if not vaddrs:
-			logging.critical('Could not extract any valid virtual address from '
-				'%s, giving up!', syscall_table_name)
-			logging.critical('Is the kernel relocatable? Relocation entries '
-				'for the syscall table are not supported.')
 			return []
 
 		seen = set(vaddrs)

@@ -20,6 +20,10 @@ class Arch(ABC):
 	# Whether the selected ABI is 32-bits or not
 	abi_bits32: bool = False
 
+	# Whether this architecture makes use of function descriptors for function
+	# pointers or not
+	uses_function_descriptors: bool = False
+
 	# Are we looking for compat syscalls (COMPACT_SYSCALL_DEFINEn)? Or, in other
 	# words, is this not the "main" ABI of the kernel we're analyzing?
 	compat: bool = False
