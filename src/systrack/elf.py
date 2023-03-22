@@ -21,7 +21,7 @@ class E_MACHINE(IntEnum):
 class E_FLAGS(IntEnum):
 	EF_ARM_EABI_MASK = 0xff000000
 
-Section = namedtuple('Section', ('vaddr', 'off', 'size'))
+Section = namedtuple('Section', ('name', 'vaddr', 'off', 'size'))
 _Symbol = namedtuple('_Symbol', ('vaddr', 'real_vaddr', 'size', 'type', 'name'))
 
 # NOTE: other code may assume that Symbol acts like a tuple. Think twice about
@@ -91,7 +91,7 @@ class ELF:
 
 		for match in exp.finditer(out):
 			name, _, va, off, sz = match.groups()
-			secs[name] = Section(int(va, 16), int(off, 16), int(sz, 16))
+			secs[name] = Section(name, int(va, 16), int(off, 16), int(sz, 16))
 
 		self.__sections = secs
 		return secs
