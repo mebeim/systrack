@@ -113,7 +113,7 @@ class ELF:
 		return '.debug_line' in self.sections
 
 	def __extract_symbols(self):
-		exp = re.compile(r'\d+:\s+([0-9a-fA-F]+)\s+(\d+)\s+(\w+).+\b(\w+)$')
+		exp = re.compile(r'\d+:\s+([0-9a-fA-F]+)\s+(\d+)\s+(\w+).+\s+(\S+)$')
 		out = ensure_command(['readelf', '-Ws', self.path]).splitlines()
 		syms = {}
 		funcs = {}
