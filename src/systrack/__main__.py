@@ -2,6 +2,7 @@ import os
 import re
 import sys
 import struct
+import signal
 import logging
 import argparse
 from pathlib import Path
@@ -16,6 +17,10 @@ from .utils import eprint, ensure_command, enable_high_verbosity, enable_silent
 from .utils import command_available, gcc_version, git_checkout, maybe_rel, format_duration
 from .arch import SUPPORTED_ARCHS, SUPPORTED_ARCHS_HELP
 from .output import output_syscalls
+
+def sigint_handler(_, __):
+	sys.stderr.write('Caught SIGINT, stopping\n')
+	sys.exit(1)
 
 def wrap_help(body: str) -> str:
 	'''Wrap a string to 65 columns without breaking words for a nice --help
@@ -153,6 +158,8 @@ def instantiate_kernel(*a, **kwa) -> Kernel:
 		sys.exit(1)
 
 def main() -> int:
+	signal.signal(signal.SIGINT, sigint_handler)
+
 	args = parse_args()
 	setup_logging(args.quiet, args.verbose, os.isatty(sys.stderr.fileno()))
 
@@ -312,5 +319,8 @@ def main() -> int:
 	output_syscalls(kernel, args.format)
 	return 0
 
+# NOTE: this is NOT executed in a normal install, because the `systrack` command
+# will point to a script that imports and directly calls the main() function
+# above.
 if __name__ == '__main__':
 	sys.exit(main())
