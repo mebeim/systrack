@@ -38,13 +38,23 @@ def output_syscalls_text(syscalls: Iterable[Syscall], spacing: int = 2):
 
 		prevnum = sc.number
 
+		if sc.file and sc.line:
+			loc = f'{sc.file}:{sc.line}'
+		elif sc.file:
+			loc = str(sc.file)
+		else:
+			loc = ''
+
+		if loc and not sc.good_location:
+			loc = '(?) ' + loc
+
 		table.append((
 			f'{sc.index:-3d}' if sc.index is not None else '-  ',
 			hex(sc.number),
 			sc.name,
 			sc.origname if sc.origname != sc.name else '',
 			sc.symbol.name,
-			f'{sc.file}:{sc.line}' if sc.file and sc.line else '',
+			loc,
 			sc.kconfig if sc.kconfig else '',
 			', '.join(sc.signature) if sc.signature else '?' if sc.signature is None else 'void'
 		))
