@@ -3,17 +3,47 @@ import sys
 import logging
 from pathlib import Path
 from operator import attrgetter
-from typing import Tuple, List, Set, Iterable, Iterator
+from typing import Tuple, List, Set, Iterable, Iterator, Optional
 
 from .arch import Arch
 from .elf import ELF, Symbol
 from .syscall import Syscall
 from .utils import ensure_command, run_command, command_available, maybe_rel
 
-def addr2line(elf: Path, addrs: Iterable[int]) -> List[Tuple[str,str]]:
+def addr2line(elf: Path, addrs: Iterable[int]) -> Iterator[Tuple[Optional[Path],Optional[int]]]:
 	out = ensure_command(['addr2line', '-e', elf, *map(hex, addrs)])
-	locs = out.splitlines()
-	return list(map(lambda d: d.split(':'), locs))
+
+	for file, line in map(lambda d: d.split(':'), out.splitlines()):
+		if file == '??':
+			yield None, None
+			continue
+
+		line = int(line) if line.isdigit() else None
+		yield Path(file), line
+
+def smart_addr2line(elf: Path, addrs: Iterable[int], srcdir: Path = None) -> Iterator[Tuple[Optional[Path],Optional[int]]]:
+	'''Run addr2line on the given elf for the given virtual addresses remapping
+	any returned paths to the given srcdir.
+
+	addr2line will always output absolute paths. In case the paths in the ELF
+	DWARF sections are relative (i.e. don't start with "/"), the directory
+	containing the ELF is taken as base. This is problematic because if the ELF
+	is moved from the original source directory the paths returned by addr2line
+	will be invalid.
+
+	To avoid this problem, whenever we know a different source directory, this
+	function remaps the paths returned by addr2line to that directory instead.
+	'''
+	locs = addr2line(elf, addrs)
+	if srcdir is None:
+		yield from locs
+
+	elfdir = elf.parent
+	for file, line in locs:
+		if file is not None and file.is_relative_to(elfdir):
+			yield srcdir / file.relative_to(elfdir), line
+		else:
+			yield file, line
 
 def grep_file(root: Path, exp: re.Pattern, file: Path) -> Iterator[str]:
 	# Use binary mode since some kernel source files may contain weird
@@ -174,13 +204,17 @@ def extract_syscall_locations(syscalls: List[Syscall], vmlinux: ELF, kdir: Path,
 		logging.warning('Command "addr2line" unavailable, skipping location info extraction')
 		return
 
+	# STEP 1: Ask addr2line for file/lineno info. Most of the times this will
+	# work with at most a simple line adjustment.
+
 	vmlinux = vmlinux.path
-	locs = addr2line(vmlinux, map(lambda s: s.symbol.real_vaddr, syscalls))
+	locs = smart_addr2line(vmlinux, map(lambda s: s.symbol.real_vaddr, syscalls), kdir)
+	locs = list(locs)
 
 	if not kdir:
 		for sc, (file, line) in zip(syscalls, locs):
-			sc.file = Path(file) if file != '??' else None
-			sc.line = int(line) if line.isdigit() else None
+			sc.file = file
+			sc.line = line
 			sc.good_location = False
 
 		if any(map(attrgetter('file'), syscalls)):
@@ -198,22 +232,19 @@ def extract_syscall_locations(syscalls: List[Syscall], vmlinux: ELF, kdir: Path,
 	res = []
 
 	if rdir:
-		remap = lambda p: kdir / maybe_rel(Path(p), rdir)
+		remap = lambda p: kdir / maybe_rel(p, rdir) if p is not None else None
 	else:
-		remap = lambda p: kdir / p
+		remap = lambda p: kdir / p if p is not None else None
 
-	# STEP 1: Ask addr2line for file/lineno info. Most of the times this will
-	# work with at most a simple line adjustment (lineno might point inside a
-	# function, but we want the function signature).
+	# Try a simple line adjustment: lineno might point inside a function, but we
+	# want the function signature.
 
 	for sc, loc in zip(syscalls, locs):
 		file, line = loc
 		sc.file = file = remap(file)
 		sc.good_location = False
 
-		if not file.is_file() or not line.isdigit():
-			sc.line = line
-
+		if file is None or not file.is_file() or line is None:
 			if sc.symbol.size > 1:
 				to_adjust.append(sc)
 				logging.debug('Location needs adjustment (invalid): %s (%s) -> '
@@ -227,7 +258,7 @@ def extract_syscall_locations(syscalls: List[Syscall], vmlinux: ELF, kdir: Path,
 		if not file.is_relative_to(kdir):
 			bad_paths = True
 
-		sc.line = line = adjust_line(file, int(line))
+		sc.line = line = adjust_line(file, line)
 
 		# For esoteric syscalls, only find a decent location for the symbol,
 		# it's pointless to go deeper
@@ -246,7 +277,7 @@ def extract_syscall_locations(syscalls: List[Syscall], vmlinux: ELF, kdir: Path,
 				'-> %s:%d', sc.origname, sc.symbol.name, rel(file), line)
 
 	# STEP 2: Simple adjustment for bad/invalid locations: ask addr2line again
-	# for vaddr + sz - 1 (except for symbols with sz <= 0).
+	# for vaddr + sz - 1 (except for symbols with sz <= 1).
 	#
 	# Rationale: The debug info for some syscall symbols points to the wrong
 	# file/line, however the last few instructions of the function have a
@@ -259,14 +290,23 @@ def extract_syscall_locations(syscalls: List[Syscall], vmlinux: ELF, kdir: Path,
 	# try checking vaddr + symbol_size - 1 with addr2line.
 
 	if to_adjust:
+		if len(to_adjust) == len(locs):
+			# If we need to adjust every single location it's very likely that
+			# the user gave us a wrong path as KDIR. This will make us attempt
+			# full adjustment and grepping for every single syscall, which is
+			# very slow. Warn so that the user figures this out without having
+			# to wait for everything to complete.
+			logging.warn('All the locations obtained from addr2line look bad, '
+				'did you provide the correct KDIR?')
+
 		vaddrs = tuple(map(lambda s: s.symbol.real_vaddr + s.symbol.size - 1, to_adjust))
-		new_locs = addr2line(vmlinux, vaddrs)
+		new_locs = smart_addr2line(vmlinux, vaddrs, kdir)
 
 		for sc, loc in zip(to_adjust, new_locs):
 			file, line = loc
 			sc.file = file = remap(file)
 
-			if not file.is_file() or not line.isdigit():
+			if file is None or not file.is_file() or line is None:
 				sc.line = line
 
 				if sc.symbol.size > 2:
@@ -281,7 +321,7 @@ def extract_syscall_locations(syscalls: List[Syscall], vmlinux: ELF, kdir: Path,
 						sc.symbol.size - 1, *loc)
 				continue
 
-			sc.line = line = adjust_line(file, int(line))
+			sc.line = line = adjust_line(file, line)
 
 			if good_location(file, line, arch, sc.origname):
 				sc.good_location = True
@@ -309,11 +349,11 @@ def extract_syscall_locations(syscalls: List[Syscall], vmlinux: ELF, kdir: Path,
 		addrs = range(sc.symbol.real_vaddr + 1, sc.symbol.real_vaddr + sc.symbol.size - 2)
 		invalid = True
 
-		for offset, loc in enumerate(addr2line(vmlinux, addrs), 1):
+		for offset, loc in enumerate(smart_addr2line(vmlinux, addrs, kdir), 1):
 			file, line = loc
 			sc.file = file = remap(file)
 
-			if not file.is_file() or not line.isdigit():
+			if file is None or not file.is_file() or line is None:
 				sc.line = line
 				continue
 
