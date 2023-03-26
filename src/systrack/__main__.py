@@ -60,7 +60,8 @@ def parse_args() -> argparse.Namespace:
 	ap.add_argument('--remap', metavar='ORIG_KRID',
 		help=wrap_help('replace ORIG_KRID with KDIR for paths obtained from ELF '
 			'debug information; needed if the kernel was built with ORIG_KDIR '
-			'as source directory instead of KDIR'))
+			'as source directory instead of KDIR, and debug info contains '
+			'absolute paths to ORIG_KDIR'))
 	ap.add_argument('--checkout', metavar='REF',
 		help=wrap_help('git checkout to REF inside KDIR before doing anything; '
 			'the special value "auto" can be used to checkout to the tag '
