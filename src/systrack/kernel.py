@@ -202,19 +202,18 @@ class Kernel:
 			# Sanity check: ensure all vaddrs are within the target section
 			for idx, vaddr in enumerate(vaddrs):
 				if not (vstart <= vaddr < vend):
-					logging.warn('Virtual address 0x%x (%s[%d]) is outside '
-						'%s: something is off!', vaddr, syscall_table_name, idx,
-						target_section.name)
+					logging.warn('Virtual address 0x%x idx %d is outside %s: '
+						'something is off!', vaddr, tbl.name, idx, target_section.name)
 		else:
 			# Apparently on some archs (looking at you, MIPS!) the syscall table
 			# symbol can have size 0. In this case we'll just warn the user and
 			# keep extracting vaddrs as long as they are valid, stopping at the
 			# first invalid one.
 			logging.warn('Syscall table (%s) has bad size (%d), doing my best '
-				'to figure out when to stop', syscall_table_name, tbl.size)
+				'to figure out when to stop', tbl.name, tbl.size)
 
 			vaddrs = []
-			for vaddr in map(translate, self.__iter_unpack_vmlinux_long(tbl_file_off)):
+			for vaddr in self.__iter_unpack_vmlinux_long(tbl_file_off):
 				if not (vstart <= vaddr < vend):
 					break
 
