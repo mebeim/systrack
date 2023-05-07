@@ -205,22 +205,34 @@ class Kernel:
 					logging.warn('Virtual address 0x%x idx %d is outside %s: '
 						'something is off!', vaddr, tbl.name, idx, target_section.name)
 		else:
-			# Apparently on some archs (looking at you, MIPS!) the syscall table
-			# symbol can have size 0. In this case we'll just warn the user and
-			# keep extracting vaddrs as long as they are valid, stopping at the
-			# first invalid one.
+			# Apparently on some archs (e.g. MIPS, PPC) the syscall table symbol
+			# can have size 0. In this case we'll just warn the user and keep
+			# extracting vaddrs as long as they are valid, stopping at the first
+			# invalid one or at the next symbol we encounter.
 			logging.warn('Syscall table (%s) has bad size (%d), doing my best '
 				'to figure out when to stop', tbl.name, tbl.size)
 
+			cur_idx_vaddr = tbl.vaddr
+			boundaries = filter(lambda x: x.type != 'FUNC', self.vmlinux.symbols.values())
+			boundaries = set(map(attrgetter('vaddr'), boundaries))
+			boundaries.discard(cur_idx_vaddr)
 			vaddrs = []
+
 			for vaddr in self.__iter_unpack_vmlinux_long(tbl_file_off):
+				# Stop at the first vaddr pointing outside target_section
 				if not (vstart <= vaddr < vend):
 					break
 
+				# Stop if we collide with another symbol right after the syscall
+				# table (may be another syscall table e.g. the compat one)
+				if cur_idx_vaddr in boundaries:
+					break
+
 				vaddrs.append(vaddr)
+				cur_idx_vaddr += self.__long_size
 
 			logging.info('Syscall table seems to be %d bytes, %d entries',
-				len(vaddrs) * self.__long_size, len(vaddrs))
+				cur_idx_vaddr - tbl.vaddr, len(vaddrs))
 
 		return vaddrs
 
