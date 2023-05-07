@@ -400,6 +400,7 @@ class Kernel:
 			if not kdeps:
 				kdeps = kconfig_syscall_deps(origname, self.version)
 
+			num = self.arch.adjust_syscall_number(num)
 			sc = Syscall(idx, num, name, origname, sym, kdeps)
 
 			if self.arch.skip_syscall(sc):

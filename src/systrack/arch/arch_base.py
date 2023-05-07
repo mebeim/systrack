@@ -249,3 +249,10 @@ class Arch(ABC):
 		logging.info('Syscall %s (%s) is not really implemented (dummy '
 			'implementation). Machine code: %s.', sc.name, sc.symbol.name, code.hex())
 		return True
+
+	def adjust_syscall_number(self, number: int) -> int:
+		'''Adjust the number for the given syscall according to any
+		arch-specific quirk there might be (e.g. PowerPC with its interleaved
+		syscall numbers).
+		'''
+		return number
