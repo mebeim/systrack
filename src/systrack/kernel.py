@@ -171,6 +171,9 @@ class Kernel:
 	def __rel(self, path: Path) -> Path:
 		return maybe_rel(path, self.kdir)
 
+	def __unpack_long(self, vaddr: int) -> int:
+		return struct.unpack(self.__long_pack_fmt, self.vmlinux.vaddr_read(vaddr, self.__long_size))[0]
+
 	def __iter_unpack_vmlinux(self, fmt: str, off: int, size: int = None) -> Iterator[Tuple[Any, ...]]:
 		f = self.vmlinux.file
 		assert f.seek(off) == off
@@ -256,33 +259,45 @@ class Kernel:
 		logging.debug('Syscall table: %r', tbl)
 
 		# Read and parse the syscall table unpacking all virtual addresses it
-		# contains
+		# contains. Depending on arch, we might need to parse function
+		# descriptors for the function pointers in the syscall table.
 
-		text = self.vmlinux.sections['.text']
+		text   = self.vmlinux.sections['.text']
+		vaddrs = []
 
 		if self.arch.uses_function_descriptors:
-			opd = self.vmlinux.sections.get('.opd')
-			if not opd:
-				logging.critical('Arch uses function descriptors, but vmlinux '
-					'has no .opd section!')
-				return []
-
-			descriptors = self.__unpack_syscall_table(tbl, opd)
 			text_vstart = text.vaddr
 			text_vend   = text_vstart + text.size
-			vaddrs      = []
 
-			# Translate function descriptors (one more level of indirection)
-			for desc_vaddr in descriptors:
-				vaddr = self.vmlinux.vaddr_read(desc_vaddr, self.__long_size)
-				vaddr = struct.unpack(self.__long_pack_fmt, vaddr)[0]
+			# Even if this arch uses function descriptors, we don't know if they
+			# are effectively used for function pointers in the syscall table.
+			# This needs to be tested, and in case they aren't used, we can
+			# fallback to "normal" parsing instead.
+			if not (text_vstart <= self.__unpack_long(tbl.vaddr) < text_vend):
+				logging.debug('Syscall table uses function descriptors')
 
-				if not (text_vstart <= vaddr < text_vend):
-					logging.warn('Function descriptor at 0x%x points outside '
-						'.text: something is off!', desc_vaddr)
+				opd = self.vmlinux.sections.get('.opd')
+				if not opd:
+					logging.critical('Arch uses function descriptors, but '
+						'vmlinux has no .opd section!')
+					return []
 
-				vaddrs.append(vaddr)
-		else:
+				descriptors = self.__unpack_syscall_table(tbl, opd)
+
+				# Translate function descriptors (one more level of indirection)
+				for desc_vaddr in descriptors:
+					vaddr = self.vmlinux.vaddr_read(desc_vaddr, self.__long_size)
+					vaddr = struct.unpack(self.__long_pack_fmt, vaddr)[0]
+
+					if not (text_vstart <= vaddr < text_vend):
+						logging.warn('Function descriptor at 0x%x points '
+							'outside .text: something is off!', desc_vaddr)
+
+					vaddrs.append(vaddr)
+			else:
+				logging.debug('Syscall table does NOT use function descriptors')
+
+		if not vaddrs:
 			vaddrs = self.__unpack_syscall_table(tbl, text)
 
 		if not vaddrs:
@@ -390,8 +405,8 @@ class Kernel:
 		# skip uneeded ones (e.g. implemented for other ABIs)
 		for idx, sym in symbols:
 			num      = self.arch.syscall_num_base + idx
-			origname = noprefix(sym.name, *prefixes)
-			origname = self.arch.translate_syscall_symbol_name(origname)
+			origname = self.arch.translate_syscall_symbol_name(sym.name)
+			origname = noprefix(origname, *prefixes)
 			name     = self.arch.normalize_syscall_name(origname)
 			kdeps    = kconfig_syscall_deps(name, self.version)
 
