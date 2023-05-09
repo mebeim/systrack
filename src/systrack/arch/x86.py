@@ -3,8 +3,8 @@ from typing import Tuple, List, Type, Optional
 from ..syscall import Syscall
 from ..elf import Symbol, ELF, E_MACHINE
 from ..utils import VersionedDict, noprefix
-from ..kconfig import VERSION_ZERO, VERSION_INF
 from ..type_hints import KernelVersion
+from ..kconfig_options import VERSION_ZERO, VERSION_INF
 
 from .arch_base import Arch
 
@@ -24,6 +24,12 @@ class ArchX86(Arch):
 		((5,5)   , VERSION_INF, 'X86_IOPL_IOPERM=y'   , []),
 		# modify_ldt
 		((4,3)   , VERSION_INF, 'MODIFY_LDT_SYSCALL=y', []),
+	))
+
+	kconfig_syscall_deps = VersionedDict((
+		(VERSION_ZERO, VERSION_INF, 'pkey_alloc'   , 'X86_INTEL_MEMORY_PROTECTION_KEYS'),
+		(VERSION_ZERO, VERSION_INF, 'pkey_free'    , 'X86_INTEL_MEMORY_PROTECTION_KEYS'),
+		(VERSION_ZERO, VERSION_INF, 'pkey_mprotect', 'X86_INTEL_MEMORY_PROTECTION_KEYS'),
 	))
 
 	def __init__(self, kernel_version: KernelVersion, abi: str, bits32: bool = False):

@@ -10,6 +10,7 @@ import logging
 from pathlib import Path
 from typing import Tuple, List, Dict, Iterable
 
+from .arch import Arch
 from .kconfig_options import *
 from .utils import ensure_command
 from .type_hints import KernelVersion
@@ -23,11 +24,10 @@ def kconfig_compatibility(kernel_version: KernelVersion) -> Dict[str,List[str]]:
 def kconfig_more_syscalls(kernel_version: KernelVersion) -> Dict[str,List[str]]:
 	return KCONFIG_MORE_SYSCALLS[kernel_version]
 
-def kconfig_syscall_deps(syscall_name: str, kernel_version: KernelVersion) -> str:
-	opt = KCONFIG_SYSCALL_DEPS[kernel_version].get(syscall_name)
-	if opt is None:
-		return None
-	return 'CONFIG_' + opt
+def kconfig_syscall_deps(syscall_name: str, kernel_version: KernelVersion, arch: Arch) -> str:
+	opt = arch.kconfig_syscall_deps[kernel_version].get(syscall_name)
+	opt = opt or KCONFIG_SYSCALL_DEPS[kernel_version].get(syscall_name)
+	return ('CONFIG_' + opt) if opt else None
 
 def run_config_script(kdir: Path, config_file: Path, args: List[str]):
 	return ensure_command(['./scripts/config', '--file', config_file] + args, cwd=kdir)

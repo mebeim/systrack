@@ -152,8 +152,12 @@ KCONFIG_MORE_SYSCALLS = VersionedDict((
 
 # Keep track of which syscall depends on which config option. Since syscalls are
 # uniquely named there is no issue in keeping track of arch-specific syscalls
-# here too. This info is only to give a richer output (namely list the kconfig
-# options needed to enable a certain syscall), it is not functional to the tool.
+# here too. HOWEVER, for syscalls that are present on multiple archs but behind
+# different configs, rely on the .kconfig_syscall_deps attr of Arch subclasses
+# instead.
+#
+# This info is only to give a richer output (namely list the kconfig options
+# needed to enable a certain syscall), it is not functional to the tool.
 #
 # 1. Most optional syscalls exist IF AND ONLY IF the corresponding config
 #    exists, so just set "since" VERSION_ZERO and "removed in" VERSION_INF for
@@ -338,9 +342,6 @@ KCONFIG_SYSCALL_DEPS = VersionedDict((
 	(VERSION_ZERO, (4,3)      , 'vm86'                   , 'VM86'                            ), # x86 32-bit only
 	((4,3)       , VERSION_INF, 'vm86old'                , 'X86_LEGACY_VM86'                 ), # x86 32-bit only, legacy
 	((4,3)       , VERSION_INF, 'vm86'                   , 'X86_LEGACY_VM86'                 ), # x86 32-bit only, legacy
-	(VERSION_ZERO, VERSION_INF, 'pkey_alloc'             , 'X86_INTEL_MEMORY_PROTECTION_KEYS'), # x86 only
-	(VERSION_ZERO, VERSION_INF, 'pkey_free'              , 'X86_INTEL_MEMORY_PROTECTION_KEYS'), # x86 only
-	(VERSION_ZERO, VERSION_INF, 'pkey_mprotect'          , 'X86_INTEL_MEMORY_PROTECTION_KEYS'), # x86 only
 	((5,5)       , VERSION_INF, 'ioperm'                 , 'X86_IOPL_IOPERM'                 ), # x86 only
 	((5,5)       , VERSION_INF, 'iopl'                   , 'X86_IOPL_IOPERM'                 ), # x86 only
 ))

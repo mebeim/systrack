@@ -407,12 +407,12 @@ class Kernel:
 			origname = self.arch.translate_syscall_symbol_name(sym.name)
 			origname = noprefix(origname, *prefixes)
 			name     = self.arch.normalize_syscall_name(origname)
-			kdeps    = kconfig_syscall_deps(name, self.version)
+			kdeps    = kconfig_syscall_deps(name, self.version, self.arch)
 
 			# We could need the original name to differentiate some syscalls
 			# in order to understand if they need some Kconfig or not
 			if not kdeps:
-				kdeps = kconfig_syscall_deps(origname, self.version)
+				kdeps = kconfig_syscall_deps(origname, self.version, self.arch)
 
 			num = self.arch.adjust_syscall_number(num)
 			sc = Syscall(idx, num, name, origname, sym, kdeps)
