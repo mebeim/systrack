@@ -4,7 +4,7 @@ from ..syscall import Syscall
 from ..elf import Symbol, ELF, E_MACHINE, E_FLAGS
 from ..utils import VersionedDict, VersionedList, noprefix, nosuffix
 from ..kconfig import VERSION_ZERO, VERSION_INF
-from ..type_hints import KernelVersion
+from ..type_hints import KernelVersion, EsotericSyscall
 
 from .arch_base import Arch
 
@@ -56,25 +56,6 @@ class ArchArm(Arch):
 			# FIXME: this will disable the seccomp syscall. Configure for an
 			# OABI-only kernel here in the future...
 			self.kconfig.add((2,6,16), VERSION_INF, 'OABI_COMPAT=y', ['AEABI=y', 'THUMB2_KERNEL=n'])
-
-		# ARM-specific syscalls that are outside the syscall table, with numbers
-		# in the range 0x0f0000-0x0fffff for EABI and 0x9f0000-0x9fffff for
-		# OABI. These are all implemented in arm_syscall()
-		# (arch/arm/kernel/traps.c) with a switch statement. WEEEIRD!
-		base = self.syscall_num_base + 0x0f0000
-		self.esoteric_syscalls = VersionedList((
-			(VERSION_ZERO, VERSION_INF, (
-				# number   name          symbol name    signature
-				(base + 1, 'breakpoint', 'arm_syscall', ()),
-				(base + 2, 'cacheflush', 'arm_syscall', ('unsigned long start', 'unsigned long end', 'int flags')),
-				(base + 3, 'usr26'     , 'arm_syscall', ()),
-				(base + 4, 'usr32'     , 'arm_syscall', ()),
-				(base + 5, 'set_tls'   , 'arm_syscall', ('unsigned long val',)),
-			)),
-			((4,15), VERSION_INF, (
-				(base + 6, 'get_tls'   , 'arm_syscall', ()),
-			)),
-		))
 
 	@staticmethod
 	def match(vmlinux: ELF) -> Optional[Tuple[Type[Arch],bool,List[str]]]:
@@ -148,3 +129,26 @@ class ArchArm(Arch):
 		if code in (b'\x6f\xf0\x15\x00\x70\x47', b'\x6f\xf0\x25\x00\x70\x47'):
 			return code
 		return None
+
+	def extract_esoteric_syscalls(self, vmlinux: ELF) -> EsotericSyscall:
+		# ARM-specific syscalls that are outside the syscall table, with numbers
+		# in the range 0x0f0000-0x0fffff for EABI and 0x9f0000-0x9fffff for
+		# OABI. These are all implemented in arm_syscall()
+		# (arch/arm/kernel/traps.c) with a switch statement. WEEEIRD!
+		#
+		if 'arm_syscall' not in vmlinux.functions:
+			return []
+
+		base = self.syscall_num_base + 0x0f0000
+		res = [
+			(base + 1, 'breakpoint', 'arm_syscall', (), None),
+			(base + 2, 'cacheflush', 'arm_syscall', ('unsigned long start', 'unsigned long end', 'int flags'), None),
+			(base + 3, 'usr26'     , 'arm_syscall', (), None),
+			(base + 4, 'usr32'     , 'arm_syscall', (), None),
+			(base + 5, 'set_tls'   , 'arm_syscall', ('unsigned long val',), None),
+		]
+
+		if self.kernel_version >= (4,15):
+			res.append((base + 6, 'get_tls', 'arm_syscall', (), None))
+
+		return res

@@ -5,7 +5,7 @@ from typing import Tuple, List, Type, Optional
 from ..syscall import Syscall
 from ..elf import Symbol, ELF
 from ..utils import VersionedDict, VersionedList, anysuffix, noprefix, nosuffix
-from ..type_hints import KernelVersion
+from ..type_hints import KernelVersion, EsotericSyscall
 
 class Arch(ABC):
 	# Directory name for this arch in the kernel source, under arch/
@@ -50,12 +50,6 @@ class Arch(ABC):
 
 	# Registers for syscall arguments. Subclasses must override this.
 	syscall_arg_regs: Tuple[str, ...] = None
-
-	# Weird arch-specific syscalls not in the syscall table: there isn't much
-	# else to do except manually list these... each entry should be in the form:
-	# (number, syscall_name, symbol_name, signature). We also need the signature
-	# since we are most likely not going to be able to extract it.
-	esoteric_syscalls: VersionedList = VersionedList()
 
 	# Additional kconfig options to set
 	kconfig: VersionedDict = VersionedDict()
@@ -256,3 +250,16 @@ class Arch(ABC):
 		syscall numbers).
 		'''
 		return number
+
+	def extract_esoteric_syscalls(self, vmlinux: ELF) -> EsotericSyscall:
+		'''Extract weird arch-specific syscalls not in the syscall table: there
+		isn't much else to do except either manually list these (if they are
+		always present) or perform static binary analysis.
+
+		The returned value is a list of tuples of the form: (number, name,
+		symbol_name, signature, kconfig_opts).
+
+		NOTE: the symbol_name that is returned needs to exist in the given
+		vmlinux.
+		'''
+		return []

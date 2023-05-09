@@ -424,19 +424,25 @@ class Kernel:
 
 			syscalls.append(sc)
 
-		# Add esoteric syscalls to the list, if any (these do not need any name
-		# translation or signature search as they are hardcoded)
-		esoteric = self.arch.esoteric_syscalls[self.version]
-		n_esoteric = len(esoteric)
-
-		for num, name, sym_name, sig in esoteric:
-			sym = self.vmlinux.symbols[sym_name]
-			syscalls.append(Syscall(None, num, name, name, sym, None, signature=sig, esoteric=True))
-
 		ni_total = 0
 		for name, n in sorted(ni_count.items(), key=itemgetter(1), reverse=True):
 			logging.info('%d syscall table entries point to %s', n, name)
 			ni_total += n
+
+		# Add esoteric syscalls to the list, if any. These do not need any name
+		# translation or signature search. Some may need tailored static binary
+		# analysis. Very fun.
+		esoteric   = self.arch.extract_esoteric_syscalls(self.vmlinux)
+		n_esoteric = len(esoteric)
+
+		# Log these, they are interesting
+		if esoteric:
+			logging.info('Found %d esoteric syscall%s: %s', n_esoteric,
+				's'[:n_esoteric ^ 1], ', '.join(map(itemgetter(1), esoteric)))
+
+		for num, name, sym_name, sig, kconf in esoteric:
+			sym = self.vmlinux.symbols[sym_name]
+			syscalls.append(Syscall(None, num, name, name, sym, kconf, signature=sig, esoteric=True))
 
 		assert len(syscalls) == len(vaddrs) - ni_total - n_skipped + n_esoteric
 
