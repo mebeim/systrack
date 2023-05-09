@@ -216,9 +216,8 @@ class Kernel:
 				'to figure out when to stop', tbl.name, tbl.size)
 
 			cur_idx_vaddr = tbl.vaddr
-			boundaries = filter(lambda x: x.type != 'FUNC', self.vmlinux.symbols.values())
-			boundaries = set(map(attrgetter('vaddr'), boundaries))
-			boundaries.discard(cur_idx_vaddr)
+			boundary = self.vmlinux.next_symbol(tbl)
+			boundary = boundary.vaddr if boundary else float('inf')
 			vaddrs = []
 
 			for vaddr in self.__iter_unpack_vmlinux_long(tbl_file_off):
@@ -228,7 +227,7 @@ class Kernel:
 
 				# Stop if we collide with another symbol right after the syscall
 				# table (may be another syscall table e.g. the compat one)
-				if cur_idx_vaddr in boundaries:
+				if cur_idx_vaddr >= boundary:
 					break
 
 				vaddrs.append(vaddr)

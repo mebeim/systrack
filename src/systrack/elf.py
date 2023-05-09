@@ -2,10 +2,11 @@ import re
 import sys
 import logging
 from enum import IntEnum
-from typing import Union, Dict
 from pathlib import Path
 from struct import unpack
+from operator import attrgetter
 from collections import namedtuple
+from typing import Union, Dict, Optional
 
 from .utils import ensure_command
 
@@ -166,3 +167,12 @@ class ELF:
 			sym = self.symbols[sym]
 
 		return self.vaddr_read(sym.real_vaddr, sym.size)
+
+	def next_symbol(self, sym: Symbol) -> Optional[Symbol]:
+		'''Find and return the first symbol whose .vaddr is higher than sym.'''
+		candidates = filter(lambda s: s.vaddr > sym.vaddr, self.symbols.values())
+
+		try:
+			return min(candidates, key=attrgetter('vaddr'))
+		except ValueError:
+			return None
