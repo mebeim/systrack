@@ -28,8 +28,11 @@ class SyscallJSONEncoder(JSONEncoder):
 		return super().default(o)
 
 def output_syscalls_text(syscalls: Iterable[Syscall], spacing: int = 2):
-	table    = []
 	prevnum  = syscalls[0].number
+	table    = [(
+		'INDEX', 'NUMBER', 'NAME', 'ORIG NAME', 'SYMBOL', 'LOCATION', 'KCONFIG',
+		'SIGNATURE'
+	)]
 
 	for sc in syscalls:
 		if sc.number - prevnum > 1:
@@ -55,7 +58,7 @@ def output_syscalls_text(syscalls: Iterable[Syscall], spacing: int = 2):
 			sc.origname if sc.origname != sc.name else '',
 			sc.symbol.name,
 			loc,
-			sc.kconfig if sc.kconfig else '',
+			sc.kconfig.replace('CONFIG_', '') if sc.kconfig else '',
 			', '.join(sc.signature) if sc.signature else '?' if sc.signature is None else 'void'
 		))
 
