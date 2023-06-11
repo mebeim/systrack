@@ -8,7 +8,7 @@ from .all import *
 from .arch_base import Arch
 
 # NOTE: For the sake of mental sanity, try keeping abi= the same name as the one
-# in the *.tbl files in the kernel sources (exception x86).
+# in the *.tbl files in the kernel sources.
 SUPPORTED_ARCHS = {
 	'x86'          : lambda v: ArchX86(v, abi='ia32', bits32=True), # "i386" ABI
 	'x86-64'       : lambda v: ArchX86(v, abi='x64'),               # "64" ABI
@@ -22,6 +22,10 @@ SUPPORTED_ARCHS = {
 	'mips64'       : lambda v: ArchMips(v, abi='n64'),
 	'mips64-n32'   : lambda v: ArchMips(v, abi='n32'),
 	'mips64-o32'   : lambda v: ArchMips(v, abi='o32'),
+#	'powerpc'      : lambda v: ArchPowerPC(v, abi='ppc32', bits32=True), # "32" ABI TODO
+	'powerpc64'    : lambda v: ArchPowerPC(v, abi='ppc64'),              # "64" ABI
+	'powerpc64-32' : lambda v: ArchPowerPC(v, abi='ppc32'),              # "32" ABI
+	'powerpc64-spu': lambda v: ArchPowerPC(v, abi='spu'),
 }
 
 ARCH_ALIASES = (
@@ -35,12 +39,18 @@ ARCH_ALIASES = (
 	('arm'          , 'eabi'      ),
 	('arm-oabi'     , 'oabi'      ),
 	('arm64'        , 'aarch64'   ),
-	('arm64-aarch32', 'aarch32-64'),
+	('arm64-aarch32', 'aarch32'   ),
 	('mips'         , 'mips32'    ),
 	('mips'         , 'o32'       ),
 	('mips64'       , 'n64'       ),
 	('mips64-n32'   , 'n32'       ),
 	('mips64-o32'   , 'o32-64'    ),
+#	('powerpc'      , 'ppc'       ), TODO
+#	('powerpc'      , 'ppc32'     ), TODO
+	('powerpc64'    , 'ppc64'     ),
+	('powerpc64-32' , 'ppc64-32'  ),
+	('powerpc64-spu', 'ppc64-spu' ),
+	('powerpc64-spu', 'spu'       ),
 )
 
 SUPPORTED_ARCHS.update({alias: SUPPORTED_ARCHS[arch] for arch, alias in ARCH_ALIASES})
@@ -48,30 +58,38 @@ SUPPORTED_ARCHS.update({alias: SUPPORTED_ARCHS[arch] for arch, alias in ARCH_ALI
 SUPPORTED_ARCHS_HELP = '''\
 Supported architectures and ABIs (values are case-insensitive):
 
-    Value          Aliases         Arch  Kernel  ABI             Build based on      Notes
-    --------------------------------------------------------------------------------------
-    x86            i386, ia32      x86   32-bit  32-bit IA32     i386_defconfig
-    x86-64         x64             x86   64-bit  64-bit x86-64   x86_64_defconfig    [1]
-    x86-64-x32     x32             x86   64-bit  64-bit x32      x86_64_defconfig    [1]
-    x86-64-ia32    ia32-64         x86   64-bit  32-bit IA32     x86_64_defconfig    [1]
-    --------------------------------------------------------------------------------------
-    arm            arm-eabi, eabi  ARM   32-bit  32-bit EABI     multi_v7_defconfig  [2]
-    arm-oabi       oabi            ARM   32-bit  32-bit OABI     multi_v7_defconfig  [2,3]
-    --------------------------------------------------------------------------------------
-    arm64          aarch64         ARM   64-bit  64-bit AArch64  defconfig
-    arm64-aarch32  aarch32-64      ARM   64-bit  32-bit AArch32  defconfig           [4]
-    --------------------------------------------------------------------------------------
-    mips           mips32, o32     MIPS  32-bit  32-bit O32      defconfig
-    mips64         n64             MIPS  64-bit  64-bit N64      ip27_defconfig      [1]
-    mips64-n32     n32             MIPS  64-bit  64-bit N32      ip27_defconfig      [1]
-    mips64-o32     o32-64          MIPS  64-bit  32-bit O32      ip27_defconfig      [1]
+    Value          Aliases         Arch     Kernel  ABI             Build based on      Notes
+    -----------------------------------------------------------------------------------------
+    x86            i386, ia32      x86      32-bit  32-bit IA32     i386_defconfig
+    x86-64         x64             x86      64-bit  64-bit x86-64   x86_64_defconfig    [1]
+    x86-64-x32     x32             x86      64-bit  64-bit x32      x86_64_defconfig    [1]
+    x86-64-ia32    ia32-64         x86      64-bit  32-bit IA32     x86_64_defconfig    [1]
+    -----------------------------------------------------------------------------------------
+    arm            arm-eabi, eabi  ARM      32-bit  32-bit EABI     multi_v7_defconfig  [2]
+    arm-oabi       oabi            ARM      32-bit  32-bit OABI     multi_v7_defconfig  [2,3]
+    -----------------------------------------------------------------------------------------
+    arm64          aarch64         ARM      64-bit  64-bit AArch64  defconfig
+    arm64-aarch32  aarch32         ARM      64-bit  32-bit AArch32  defconfig           [4]
+    -----------------------------------------------------------------------------------------
+    mips           mips32, o32     MIPS     32-bit  32-bit O32      defconfig
+    mips64         n64             MIPS     64-bit  64-bit N64      ip27_defconfig      [1]
+    mips64-n32     n32             MIPS     64-bit  64-bit N32      ip27_defconfig      [1]
+    mips64-o32     o32-64          MIPS     64-bit  32-bit O32      ip27_defconfig      [1]
+    -----------------------------------------------------------------------------------------
+    powerpc64      ppc64           PowerPC  64-bit  64-bit PPC64    ppc64_defconfig     [1]
+    powerpc64-32   ppc64-32        PowerPC  64-bit  32-bit PPC32    ppc64_defconfig     [1]
+    powerpc64-spu  ppc64-spu, spu  PowerPC  64-bit  64-bit "SPU"    ppc64_defconfig     [1,5]
 
     [1] Building creates a kernel supporting all ABIs for this architecture.
     [2] Building for Linux <= v3.7 will use "defconfig" instead.
     [3] Building creates an EABI kernel with compat OABI support. Building an OABI-only
         kernel is NOT supported. The seccomp filter system will be missing.
     [4] AArch64 kernel with compat AArch32 support.
+    [5] "SPU" is not a real ABI. It indicates a Cell processor SPU (Synergistic Processing
+        Unit). The ABI is really PPC64, but SPUs can only use a subset of syscalls.
 '''
+
+#    powerpc        ppc, ppc32      PowerPC  32-bit  32-bit PPC32    ??? TODO
 
 def arch_from_name(name: str, kernel_version: KernelVersion) -> Arch:
 	'''Instantiate and return the right Arch subclass given a human-friendly

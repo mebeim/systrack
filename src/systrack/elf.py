@@ -14,6 +14,8 @@ from .utils import ensure_command
 class E_MACHINE(IntEnum):
 	EM_386     = 3   # x86
 	EM_MIPS    = 8   # MIPS R3000 (32 or 64 bit)
+	EM_PPC     = 20  # PowerPC 32-bit
+	EM_PPC64   = 21	 # PowerPC 64-bit
 	EM_ARM     = 40  # ARM 32-bit
 	EM_X86_64  = 62  # x86-64
 	EM_AARCH64 = 183 # ARM 64-bit
@@ -85,7 +87,7 @@ class ELF:
 		if self.__sections is not None:
 			return self.__sections
 
-		# We actually only really care about SHT_PROBBITS or SHT_NOBITS
+		# We actually only really care about SHT_PROGBITS or SHT_NOBITS
 		exp = re.compile(r'\s([.\w]+)\s+(PROGBITS|NOBITS)\s+([0-9a-fA-F]+)\s+([0-9a-fA-F]+)\s+([0-9a-fA-F]+)')
 		out = ensure_command(['readelf', '-WS', self.path])
 		secs = {}

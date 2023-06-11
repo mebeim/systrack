@@ -5,7 +5,7 @@
 # on the kernel version.
 #
 # Only arch-agnostic Kconfig options are present here. Arch-specific Kconfig
-# options are defined separately in each `Arch` subclass in `arch.py`.
+# options are defined separately in each `Arch` subclass in `arch/`.
 #
 # Versions for Kconfig options can be looked up using the online LKDDB:
 # https://cateee.net/lkddb/web-lkddb/ - seriously a godsend for this job.
@@ -84,7 +84,7 @@ KCONFIG_COMPATIBILITY = VersionedList((
 # Kconfig options to enable optional syscalls. We want to build a kernel with as
 # many syscalls as possible. These are some arch-agnostic config options to set
 # in order to enable more syscalls. Arch-specific configs (or configs that are
-# present in different kernel versions depending on the arch) are in `arch.py`.
+# present in different kernel versions depending on the arch) are uner `arch/`.
 #
 # Notes on some of these:
 #
@@ -287,6 +287,8 @@ KCONFIG_SYSCALL_DEPS = VersionedDict((
 	(VERSION_ZERO, VERSION_INF, 'timer_getoverrun'       , 'POSIX_TIMERS'                    ),
 	(VERSION_ZERO, VERSION_INF, 'timer_gettime'          , 'POSIX_TIMERS'                    ),
 	(VERSION_ZERO, VERSION_INF, 'timer_settime'          , 'POSIX_TIMERS'                    ),
+	(VERSION_ZERO, VERSION_INF, 'rtas'                   , 'PPC_RTAS'                        ), # powerpc only
+	(VERSION_ZERO, VERSION_INF, 'subpage_prot'           , 'PPC_SUBPAGE_PROT'                ), # powerpc 64-bit only
 	(VERSION_ZERO, VERSION_INF, 'quotactl'               , 'QUOTACTL'                        ),
 	(VERSION_ZERO, VERSION_INF, 'quotactl_fd'            , 'QUOTACTL'                        ),
 	(VERSION_ZERO, VERSION_INF, 'rseq'                   , 'RSEQ'                            ),
@@ -299,6 +301,8 @@ KCONFIG_SYSCALL_DEPS = VersionedDict((
 	(VERSION_ZERO, VERSION_INF, 'ssetmask'               , 'SGETMASK_SYSCALL'                ), # obsolete
 	(VERSION_ZERO, VERSION_INF, 'signalfd'               , 'SIGNALFD'                        ),
 	(VERSION_ZERO, VERSION_INF, 'signalfd4'              , 'SIGNALFD'                        ),
+	(VERSION_ZERO, VERSION_INF, 'spu_create'             , 'SPU_FS'                          ), # powerpc only
+	(VERSION_ZERO, VERSION_INF, 'spu_run'                , 'SPU_FS'                          ), # powerpc only
 	(VERSION_ZERO, VERSION_INF, 'swapon'                 , 'SWAP'                            ),
 	(VERSION_ZERO, VERSION_INF, 'swapoff'                , 'SWAP'                            ),
 	(VERSION_ZERO, (5, 5)     , 'sysctl'                 , 'SYSCTL_SYSCALL'                  ), # dead since v5.9
