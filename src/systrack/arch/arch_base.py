@@ -246,7 +246,7 @@ class Arch(ABC):
 			return False
 
 		logging.info('Syscall %s (%s) is not really implemented (dummy '
-			'implementation). Machine code: %s.', sc.name, sc.symbol.name, code.hex())
+			'implementation), code: %s.', sc.name, sc.symbol.name, code.hex())
 		return True
 
 	def adjust_syscall_number(self, number: int) -> int:

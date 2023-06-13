@@ -1,5 +1,5 @@
 from typing import Tuple, List, Type, Optional
-
+import logging
 from ..syscall import Syscall
 from ..elf import Symbol, ELF, E_MACHINE
 from ..utils import VersionedDict, noprefix
@@ -201,28 +201,37 @@ class ArchX86(Arch):
 
 	def _dummy_syscall_code(self, sc: Syscall, vmlinux: ELF) -> Optional[bytes]:
 		# Check if the code of the syscall only consists of
-		# `MOV rax/eax, -ENOSYS/-EINVAL` followed by a RET or relative JMP, e.g.
-		# lookup_dcookie in v5.19:
+		# `MOV rax/eax, -ENOSYS/-EINVAL` followed by a RET or relative JMP and
+		# optionally preceded by an ENDBR64/32. E.G., lookup_dcookie in v6.3:
 		#
-		#     48 c7 c0 da ff ff ff     mov    rax,  0xffffffffffffffda
-		#     e9 84 ca f6 00           jmp    0xf6ca90
+		# <__x64_sys_lookup_dcookie>:
+		#        f3 0f 1e fa             endbr64
+		#        48 c7 c0 da ff ff ff    mov    rax,0xffffffffffffffda
+		#        e9 74 8d 90 00          jmp    ffffffff819b8b84 <__x86_return_thunk>
 		#
+		# TODO: relies on the symbol having a valid size (!= 0), improve?
 		sz = sc.symbol.size
-		if sz < 6 or sz > 12:
+		if sz < 6 or sz > 16:
 			return None
 
-		code = vmlinux.read_symbol(sc.symbol)
+		orig = code = vmlinux.read_symbol(sc.symbol)
 		bad_imm = (b'\xda\xff\xff\xff', b'\xea\xff\xff\xff')
 
-		if self.abi == 'ia32':
-			if code[:1] == b'\xb8' and code[1:5] in bad_imm: # mov eax, -ENOSYS/-EINVAL
-				if sz == 6  and code[5] == 0xc3: return code # ret
-				if sz == 7  and code[5] == 0xeb: return code # jmp rel8
-				if sz == 10 and code[5] == 0xe9: return code # jmp rel32
-			return None
+		# endbr64/endbr32
+		if code.startswith(b'\xf3\x0f\x1e\xfa') or code.startswith(b'\xf3\x0f\x1e\xfb'):
+			code = code[4:]
+			sz -= 4
 
+		# 32-bit kernel
+		if code[:1] == b'\xb8' and code[1:5] in bad_imm: # mov eax, -ENOSYS/-EINVAL
+			if sz == 6  and code[5] == 0xc3: return orig # ret
+			if sz == 7  and code[5] == 0xeb: return orig # jmp rel8
+			if sz == 10 and code[5] == 0xe9: return orig # jmp rel32
+
+		# 64-bit kernel
 		if code[:3] == b'\x48\xc7\xc0' and code[3:7] in bad_imm: # mov rax, -ENOSYS/-EINVAL
-			if sz == 8  and code[7] == 0xc3: return code # ret
-			if sz == 9  and code[7] == 0xeb: return code # jmp rel8
-			if sz == 12 and code[7] == 0xe9: return code # jmp rel32
+			if sz == 8  and code[7] == 0xc3: return orig # ret
+			if sz == 9  and code[7] == 0xeb: return orig # jmp rel8
+			if sz == 12 and code[7] == 0xe9: return orig # jmp rel32
+
 		return None
