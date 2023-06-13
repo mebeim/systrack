@@ -265,6 +265,7 @@ KCONFIG_SYSCALL_DEPS = VersionedDict((
 	(VERSION_ZERO, VERSION_INF, 'setsockopt'             , 'NET'                             ),
 	(VERSION_ZERO, VERSION_INF, 'shutdown'               , 'NET'                             ),
 	(VERSION_ZERO, VERSION_INF, 'socket'                 , 'NET'                             ),
+	(VERSION_ZERO, VERSION_INF, 'socketcall'             , 'NET'                             ),
 	(VERSION_ZERO, VERSION_INF, 'socketpair'             , 'NET'                             ),
 	(VERSION_ZERO, (3, 1)     , 'nfsservctl'             , 'NFSD'                            ), # dead
 	(VERSION_ZERO, VERSION_INF, 'mbind'                  , 'NUMA'                            ),
