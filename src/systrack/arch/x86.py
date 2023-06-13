@@ -173,6 +173,12 @@ class ArchX86(Arch):
 		if self.abi == 'ia32' and not self.bits32 and sc.number in (113, 166):
 			return True
 
+		# pkey_{alloc,free,mprotect} can exist for compat 32-bit mode on 64-bit
+		# kernels (interesting), but definitely do not exist for 32-bit kernels,
+		# so avoid wasting time with these
+		if self.abi == 'ia32' and self.bits32 and sc.number in (380, 381, 382):
+			return True
+
 		return False
 
 	def translate_syscall_symbol_name(self, sym_name: str) -> str:
