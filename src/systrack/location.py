@@ -69,11 +69,15 @@ def grep_recursive(root: Path, exp: re.Pattern, exclude: Set[str],
 
 def grep_kernel_sources(kdir: Path, arch: Arch, syscalls: List[Syscall]) -> Iterator[Tuple[Syscall,Path,int]]:
 	if arch.compat:
-		exp = rb'\b(COMPAT_)?SYSCALL(32)?_DEFINE\d\s*\(\s*\w+'
+		base_exp = r'\b(COMPAT_)?SYSCALL(32)?_DEFINE\d\s*\('
 	elif arch.bits32:
-		exp = rb'\bSYSCALL(32)?_DEFINE\d\s*\(\s*\w+'
+		base_exp = r'\bSYSCALL(32)?_DEFINE\d\s*\('
 	else:
-		exp = rb'\bSYSCALL_DEFINE\d\s*\(\s*\w+'
+		base_exp = r'\bSYSCALL_DEFINE\d\s*\('
+
+	oddstyle = arch.syscall_def_regexp()
+	if oddstyle is not None:
+		base_exp = f'(({base_exp})|({oddstyle}))'
 
 	if not command_available('rg'):
 		logging.debug('No ripgrep available :( falling back to slow python implementation')
@@ -89,7 +93,7 @@ def grep_kernel_sources(kdir: Path, arch: Arch, syscalls: List[Syscall]) -> Iter
 			if not path.match(arch.name):
 				exclude.add(path.resolve())
 
-		out = list(grep_recursive(kdir, re.compile(exp), exclude))
+		out = list(grep_recursive(kdir, re.compile(base_exp + r'\s*\w+'), exclude))
 	else:
 		out = ensure_command((
 			'rg', '--line-number',
@@ -100,18 +104,17 @@ def grep_kernel_sources(kdir: Path, arch: Arch, syscalls: List[Syscall]) -> Iter
 			'--glob', '!arch/*',           # ignore other architectures (important)
 			'--glob', f'arch/{arch.name}', # include the correct one
 			'--glob', '*.c',
-			exp
+			base_exp + r'\s*\w+'
 		), cwd=kdir).splitlines()
 
+	exps = {s: re.compile(rf':{base_exp}{s.origname}[,)]') for s in syscalls}
+
 	if arch.compat:
-		exps = {s: re.compile(rf':(COMPAT_)?SYSCALL(32)?_DEFINE\d\({s.origname}[,)]') for s in syscalls}
-		key  = lambda l: (l.startswith('arch'), ('COMPAT' in l) + ('SYSCALL32' in l))
+		key = lambda l: (l.startswith('arch'), ('COMPAT' in l) + ('SYSCALL32' in l))
 	elif arch.bits32:
-		exps = {s: re.compile(rf':SYSCALL(32)?_DEFINE\d\({s.origname}[,)]') for s in syscalls}
-		key  = lambda l: (l.startswith('arch'), 'SYSCALL32' in l)
+		key = lambda l: (l.startswith('arch'), 'SYSCALL32' in l)
 	else:
-		exps = {s: re.compile(rf':SYSCALL_DEFINE\d\({s.origname}[,)]') for s in syscalls}
-		key  = lambda l: l.startswith('arch')
+		key = lambda l: l.startswith('arch')
 
 	# Prioritize files under arch/ and prefer compat/32bit syscalls if needed
 	out.sort(key=key, reverse=True)
@@ -142,7 +145,14 @@ def good_location(file: Path, line: int, arch: Arch, name: str = '') -> bool:
 	# therefore point (addr2line output) to old-style `asmlinkage` functions
 	newstyle = ('^(COMPAT_)?' if arch.compat else '^') + rf'SYSCALL(32)?_DEFINE\d\({name}'
 	oldstyle = rf'^asmlinkage \w+' + (rf' sys(32)?_{name}\(' if name else '')
-	return re.match(f'{oldstyle}|{newstyle}', definition) is not None
+
+	if re.match(f'{oldstyle}|{newstyle}', definition) is not None:
+		return True
+
+	# Some archs use weirdly named SYSCALL_DEFINEn macros, e.g. PPC32 ABI on
+	# PowerPC 64-bit with its "PPC32_SYSCALL_DEFINEn".
+	oddstyle = arch.syscall_def_regexp(name)
+	return oddstyle is not None and re.match(oddstyle, definition) is not None
 
 def adjust_line(file: Path, line: int) -> int:
 	try:

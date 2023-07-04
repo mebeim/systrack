@@ -268,3 +268,17 @@ class Arch(ABC):
 		vmlinux.
 		'''
 		return []
+
+	def syscall_def_regexp(self, syscall_name: Optional[str]=None) -> Optional[str]:
+		'''Return a regexp capable of matching syscall definitions using
+		arch-specific SYSCALL_DEFINEx macros with weird names. If syscall_name
+		is given, return a regexp to match this syscall definition exactly,
+		otherwise just a generic one.
+
+		With syscall_name: the returned regexp should match a macro call up to
+		and including the syscall name, e.g., "SYSCALL_DEFINE3(name".
+
+		Without syscall_name: the returned regexp should match the macro call up
+		to and including the first open parenthesis, e.g., "SYSCALL_DEFINE3(".
+		'''
+		return None
