@@ -53,7 +53,9 @@ def syscall_signature_from_source(file: Path, line: int, big_endian: bool) -> Tu
 	#     SYSCALL_DEFINEx(name, type1, arg1, type2, arg2, ...)
 	#     asmlinkage xxx sys_xxx(type1 arg1, type2 arg2, ...)
 
-	newsig = noprefix(sig, 'SYSCALL_DEFINE', 'SYSCALL32_DEFINE', 'COMPAT_SYSCALL_DEFINE', 'COMPAT_SYSCALL32_DEFINE')
+	newsig = noprefix(sig, 'SYSCALL_DEFINE', 'SYSCALL32_DEFINE',
+		'COMPAT_SYSCALL_DEFINE', 'COMPAT_SYSCALL32_DEFINE',
+		'PPC32_SYSCALL_DEFINE')
 
 	if sig != newsig:
 		sig = newsig

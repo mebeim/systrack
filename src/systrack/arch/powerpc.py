@@ -234,3 +234,11 @@ class ArchPowerPC(Arch):
 		# We have the syscall
 		kconf = 'PPC_FAST_ENDIAN_SWITCH' if self.kernel_version >= (4,15) else None
 		return [(0x1ebe, 'switch_endian', exc.name, (), kconf)]
+
+	def syscall_def_regexp(self, syscall_name: Optional[str]=None) -> Optional[str]:
+		if self.abi != 'ppc32':
+			return None
+
+		if syscall_name is not None:
+			return rf'^PPC32_SYSCALL_DEFINE\d\({syscall_name}'
+		return r'\bPPC32_SYSCALL_DEFINE\d\s*\('
