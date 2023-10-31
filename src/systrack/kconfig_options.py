@@ -185,6 +185,7 @@ KCONFIG_SYSCALL_DEPS = VersionedDict((
 	(VERSION_ZERO, VERSION_INF, 'ioprio_set'             , 'BLOCK'                           ),
 	(VERSION_ZERO, VERSION_INF, 'bpf'                    , 'BPF_SYSCALL'                     ),
 	(VERSION_ZERO, VERSION_INF, 'acct'                   , 'BSD_PROCESS_ACCT'                ),
+	((6,5)       , VERSION_INF, 'cachestat'              , 'CACHESTAT_SYSCALL'               ),
 	(VERSION_ZERO, (5,12)     , 'kcmp'                   , 'CHECKPOINT_RESTORE'              ),
 	(VERSION_ZERO, VERSION_INF, 'process_vm_readv'       , 'CROSS_MEMORY_ATTACH'             ),
 	(VERSION_ZERO, VERSION_INF, 'process_vm_writev'      , 'CROSS_MEMORY_ATTACH'             ),
