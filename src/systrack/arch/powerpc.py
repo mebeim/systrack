@@ -158,8 +158,11 @@ class ArchPowerPC(Arch):
 		if adot or bdot:
 			if not adot: return b
 			if not bdot: return a
-			return a if a.name.startswith('.sys_') else b
+			if a.name.startswith('.sys_'): return a
+			if b.name.startswith('.sys_'): return b
+			return a if a.name.startswith('.compat_sys_') else b
 
+		# Base method does not know about dotted symbols
 		return super().preferred_symbol(a, b)
 
 	def skip_syscall(self, sc: Syscall) -> bool:

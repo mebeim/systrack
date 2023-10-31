@@ -109,8 +109,8 @@ class Arch(ABC):
 	def preferred_symbol(self, a: Symbol, b: Symbol) -> Symbol:
 		'''Decide which symbol should be preferred when multiple syscall symbols
 		point to the same virtual address. By default, just prefer symbols with
-		the classic "sys_" prefix over anything else. Subclesses can override
-		this to implement their own preferences.
+		the classic "sys_" or "compat_sys_" prefix over anything else.
+		Subclesses can override this to implement their own preferences.
 
 		For example, on x86-64 with IA32 emulation support, __x64_sys_getpid and
 		__ia32_sys_getpid point to the same vaddr. We prefer __x64_sys_getpid if
@@ -122,7 +122,9 @@ class Arch(ABC):
 		same vaddr, they are in fact the same function, and the location
 		information will also be correct regardless of which one is picked.
 		'''
-		return a if a.name.startswith('sys_') else b
+		if a.name.startswith('sys_'): return a
+		if b.name.startswith('sys_'): return b
+		return a if a.name.startswith('compat_sys_') else b
 
 	def symbol_is_ni_syscall(self, sym: Symbol) -> bool:
 		'''Determine whether the symbol name identifies the special
