@@ -26,7 +26,7 @@
 				<tr>
 					<td>{{sc.number}}</td>
 					<td>{{ '0x%x' | format(sc.number) }}</td>
-					<td{%if sc.esoteric %} class="esoteric" title="This syscall is esoteric: it only exists on this architecture and has a special definition."{% endif %}>{{sc.name}}</td>
+					<td{%if sc.esoteric %} class="esoteric" title="This syscall has an esoteric implementation"{% endif %}>{{sc.name}}</td>
 					<td>{{sc.symbol.name}}</td>
 	# if sc.file and sc.line is not none
 		# if not sc.good_location
