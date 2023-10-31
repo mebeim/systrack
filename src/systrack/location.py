@@ -47,11 +47,12 @@ def smart_addr2line(elf: Path, addrs: Iterable[int], srcdir: Path = None) -> Ite
 
 def grep_file(root: Path, exp: re.Pattern, file: Path) -> Iterator[str]:
 	# Use binary mode since some kernel source files may contain weird
-	# non-unicode chars and break everything
+	# non-unicode chars and break everything (go figure). Decode a line only in
+	# case of a match.
 	with file.open('rb') as f:
 		for lineno, line in enumerate(f, 1):
 			if exp.search(line):
-				yield f'{file.relative_to(root)}:{lineno}:{line.rstrip()}'
+				yield f'{file.relative_to(root)}:{lineno}:{line.rstrip().decode()}'
 
 def grep_recursive(root: Path, exp: re.Pattern, exclude: Set[str],
 		curdir: Path = None) -> Iterator[str]:
@@ -90,11 +91,12 @@ def grep_kernel_sources(kdir: Path, arch: Arch, syscalls: List[Syscall]) -> Iter
 			(kdir / 'tools').resolve(),
 		}
 
+		# Ignore other architectures
 		for path in (kdir / 'arch').iterdir():
 			if not path.match(arch.name):
 				exclude.add(path.resolve())
 
-		out = list(grep_recursive(kdir, re.compile(base_exp + r'\s*\w+'), exclude))
+		out = list(grep_recursive(kdir, re.compile((base_exp + r'\s*\w+').encode()), exclude))
 	else:
 		out = ensure_command((
 			'rg', '--line-number',
@@ -122,7 +124,7 @@ def grep_kernel_sources(kdir: Path, arch: Arch, syscalls: List[Syscall]) -> Iter
 	out.sort(key=key, reverse=True)
 
 	for line in out:
-		for sc, exp in tuple(exps.items()):
+		for sc, exp in exps.items():
 			if exp.search(line):
 				file, line = line.split(':')[:2]
 				yield sc, kdir / file, int(line)
