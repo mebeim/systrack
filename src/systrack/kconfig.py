@@ -8,7 +8,7 @@
 
 import logging
 from pathlib import Path
-from typing import Tuple, List, Dict, Iterable
+from typing import List, Dict, Iterable
 
 from .arch import Arch
 from .kconfig_options import *

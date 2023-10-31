@@ -4,7 +4,7 @@ from typing import Tuple, List, Type, Optional
 
 from ..syscall import Syscall
 from ..elf import Symbol, ELF
-from ..utils import VersionedDict, VersionedList, anysuffix, noprefix, nosuffix
+from ..utils import VersionedDict, anysuffix, noprefix, nosuffix
 from ..type_hints import KernelVersion, EsotericSyscall
 
 class Arch(ABC):

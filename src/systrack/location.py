@@ -6,9 +6,9 @@ from operator import attrgetter
 from typing import Tuple, List, Set, Iterable, Iterator, Optional
 
 from .arch import Arch
-from .elf import ELF, Symbol
+from .elf import ELF
 from .syscall import Syscall
-from .utils import ensure_command, run_command, command_available, maybe_rel
+from .utils import ensure_command, command_available, maybe_rel
 
 def addr2line(elf: Path, addrs: Iterable[int]) -> Iterator[Tuple[Optional[Path],Optional[int]]]:
 	out = ensure_command(['addr2line', '-e', elf, *map(hex, addrs)])

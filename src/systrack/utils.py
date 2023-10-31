@@ -1,15 +1,10 @@
-import os
-import re
 import sys
 import logging
 from pathlib import Path
-from os.path import commonprefix
 from typing import Union, Iterable, Tuple, Any, AnyStr, Hashable
 from textwrap import indent
 from subprocess import Popen, DEVNULL, PIPE
 from collections import defaultdict
-from datetime import timedelta
-from operator import itemgetter
 from shutil import which
 
 class VersionedDict:

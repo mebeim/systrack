@@ -1,20 +1,18 @@
 import re
-import sys
 import logging
 import struct
 import atexit
 from pathlib import Path
 from time import monotonic
 from os import sched_getaffinity
-from operator import itemgetter, attrgetter
+from operator import itemgetter
 from collections import defaultdict, Counter
-from itertools import zip_longest
 from typing import Tuple, List, Iterator, Union, Any
 
 from .elf import ELF, Symbol, Section
-from .arch import Arch, arch_from_name, arch_from_vmlinux
+from .arch import arch_from_name, arch_from_vmlinux
 from .syscall import Syscall, common_syscall_symbol_prefixes
-from .utils import run_command, ensure_command, VersionedDict, high_verbosity
+from .utils import run_command, ensure_command, high_verbosity
 from .utils import maybe_rel, noprefix
 from .location import extract_syscall_locations
 from .signature import extract_syscall_signatures

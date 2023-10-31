@@ -1,5 +1,5 @@
 from typing import Tuple, List, Type, Optional
-import logging
+
 from ..syscall import Syscall
 from ..elf import Symbol, ELF, E_MACHINE
 from ..utils import VersionedDict, noprefix

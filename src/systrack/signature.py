@@ -6,7 +6,7 @@ from typing import Tuple, List, Iterable, Iterator
 
 from .elf import ELF
 from .syscall import Syscall
-from .utils import anyprefix, noprefix
+from .utils import noprefix
 
 def expand_macros(sig: Iterable[str], big_endian: bool) -> Iterator[str]:
 	for field in sig:

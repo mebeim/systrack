@@ -1,9 +1,7 @@
 import sys
 from itertools import starmap
-from operator import attrgetter
 from pathlib import Path
 from typing import Iterable
-from textwrap import dedent
 from json import JSONEncoder, dump
 
 from .utils import eprint

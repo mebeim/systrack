@@ -1,15 +1,10 @@
 import os
-import re
 import sys
-import struct
 import signal
 import logging
 import argparse
 from pathlib import Path
-from operator import itemgetter
-from typing import Iterable
-from textwrap import indent, TextWrapper
-from collections import namedtuple, defaultdict, Counter
+from textwrap import TextWrapper
 
 from .version import VERSION_HELP
 from .kernel import Kernel, KernelVersionError, KernelArchError, KernelWithoutSymbolsError, KernelMultiABIError
