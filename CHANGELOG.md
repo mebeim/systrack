@@ -1,6 +1,25 @@
 Systrack changelog
 ==================
 
+v0.3.1
+------
+
+**Improvements**:
+
+- x86: Add build support for `map_shadow_stack`.
+- Prefer `compat_sys_` over `__se_compat_sys_` and other longer symbol synonyms;
+  same for `.compat_sys_` on PowerPC.
+
+**Bug fixes**:
+
+- Fix broken naive grepping of syscall definitions when no ripgrep is available.
+- Correctly report `cachestat` depending on `CACHESTAT_SYSCALL=y`.
+
+**Internal changes**:
+
+- Sort stderr logs for reproducible output and easier diffing.
+- Skip `lib/` directory in kernel sources to improve grepping performance.
+
 v0.3
 ----
 
