@@ -239,7 +239,6 @@ def extract_syscall_locations(syscalls: List[Syscall], vmlinux: ELF, kdir: Path,
 	to_adjust = []
 	to_retry = []
 	to_grep = []
-	res = []
 
 	if rdir:
 		remap = lambda p: kdir / maybe_rel(p, rdir) if p is not None else None
@@ -298,6 +297,7 @@ def extract_syscall_locations(syscalls: List[Syscall], vmlinux: ELF, kdir: Path,
 	# function defined somewhere else. The final RET instruction is basically
 	# the only one that truly belongs to the function. The workaround is to also
 	# try checking vaddr + symbol_size - 1 with addr2line.
+	to_adjust.sort(key=attrgetter('name'))
 
 	if to_adjust:
 		if len(to_adjust) == len(locs):
@@ -354,6 +354,7 @@ def extract_syscall_locations(syscalls: List[Syscall], vmlinux: ELF, kdir: Path,
 	# Reasoning: not much, just being optimistic. This is unlikely to work if
 	# addr2line didn't find anything for vaddr nor for vaddr + sz - 1. If we get
 	# to this point, there is probably no file/line debug info for it at all.
+	to_retry.sort(key=attrgetter('name'))
 
 	for sc in to_retry:
 		addrs = range(sc.symbol.real_vaddr + 1, sc.symbol.real_vaddr + sc.symbol.size - 2)
@@ -415,7 +416,11 @@ def extract_syscall_locations(syscalls: List[Syscall], vmlinux: ELF, kdir: Path,
 	# only way would be to manually analyze the code or magically invoke the
 	# preprocessor (which we are not even going to bother trying).
 
-	for sc, file, line in grep_kernel_sources(kdir, arch, to_grep):
+	# Sort by syscall name, group not found first
+	grepped = grep_kernel_sources(kdir, arch, to_grep)
+	grepped = sorted(grepped, key=lambda x: (x[1] is not None, x[0].name))
+
+	for sc, file, line in grepped:
 		if file is None:
 			logging.info('Location could not be found through grepping: %s '
 				'(orig name %s)', sc.name, sc.origname)
