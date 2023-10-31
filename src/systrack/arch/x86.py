@@ -24,6 +24,7 @@ class ArchX86(Arch):
 		((5,5)   , VERSION_INF, 'X86_IOPL_IOPERM=y'   , []),
 		# modify_ldt
 		((4,3)   , VERSION_INF, 'MODIFY_LDT_SYSCALL=y', []),
+		((4,3)   , VERSION_INF, 'MODIFY_LDT_SYSCALL=y', []),
 	))
 
 	kconfig_syscall_deps = VersionedDict((
@@ -93,7 +94,7 @@ class ArchX86(Arch):
 			self.kconfig.add((5,18)      , VERSION_INF, 'X86_X32_ABI=y'   , [])
 
 			# kexec_file_load
-			self.kconfig.add((3,17), VERSION_INF, 'KEXEC_FILE=y', ['X86_64=y', 'CRYPTO=y', 'CRYPTO_SHA256=y'])
+			self.kconfig.add((3,17)      , VERSION_INF, 'KEXEC_FILE=y', ['X86_64=y', 'CRYPTO=y', 'CRYPTO_SHA256=y'])
 			# mbind, migrate_pages, {get,set}_mempolicy
 			self.kconfig.add(VERSION_ZERO, (2,6,15)   , 'NUMA=y', [])
 			self.kconfig.add((2,6,15)    , (2,6,29)   , 'NUMA=y', ['SMP=y'])
@@ -102,6 +103,10 @@ class ArchX86(Arch):
 			#   NOTE: in theory depends on (CPU_SUP_INTEL || CPU_SUP_AMD) but we
 			#   are pretty sure that CPU_SUP_INTEL will be =y
 			self.kconfig.add((4,6)       , VERSION_INF, 'X86_INTEL_MEMORY_PROTECTION_KEYS=y', ['X86_64=y', 'CPU_SUP_INTEL=y'])
+			# map_shadow_stack
+			#   NOTE: depends on assembler support for WRUSS instruction
+			#   (GNU binutils >= 2.31)
+			self.kconfig.add((6,6)       , VERSION_INF, 'X86_USER_SHADOW_STACK=y', ['AS_WRUSS=y'])
 
 	@staticmethod
 	def match(vmlinux: ELF) -> Optional[Tuple[Type[Arch],bool,List[str]]]:
