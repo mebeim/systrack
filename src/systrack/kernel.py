@@ -5,7 +5,7 @@ import atexit
 from pathlib import Path
 from time import monotonic
 from os import sched_getaffinity
-from operator import itemgetter
+from operator import itemgetter, attrgetter
 from collections import defaultdict, Counter
 from typing import Tuple, List, Iterator, Union, Any
 
@@ -317,10 +317,13 @@ class Kernel:
 
 		seen = set(vaddrs)
 		symbols_by_vaddr = {sym.vaddr: sym for sym in ni_syscalls}
+		discarded_logs = []
+		preferred_logs = []
 
 		# Create a mapping vaddr -> symbol for every vaddr in the syscall table
-		# for convenience.
-		for sym in self.vmlinux.symbols.values():
+		# for convenience. Sort symbols by name to generate reproducible results
+		# and logs.
+		for sym in sorted(self.vmlinux.symbols.values(), key=attrgetter('name')):
 			vaddr = sym.vaddr
 			if vaddr not in seen:
 				continue
@@ -332,17 +335,26 @@ class Kernel:
 			if other is not None:
 				if other in ni_syscalls and sym not in ni_syscalls:
 					# Don't allow other symbols to "override" a ni_syscall
-					logging.debug('Discarding alias for %s: %s', other.name, sym.name)
+					if logging.root.isEnabledFor(logging.DEBUG):
+						discarded_logs.append((sym.name, other.name))
 					continue
 
 				pref = self.arch.preferred_symbol(sym, other)
 				sym, other = pref, (other if pref is sym else sym)
 
 				if high_verbosity():
-					logging.debug('Preferring %s over %s', pref.name, other.name)
+					preferred_logs.append((pref.name, other.name))
 
 			symbols_by_vaddr[vaddr] = sym
 
+		for sym, other in discarded_logs:
+			logging.debug('Discarding %s as alias for %s', sym, other)
+
+		for sym, other in preferred_logs:
+			logging.debug('Preferring %s over %s', sym, other)
+
+		del discarded_logs
+		del preferred_logs
 		del seen
 
 		if not symbols_by_vaddr:
