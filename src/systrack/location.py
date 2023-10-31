@@ -85,6 +85,7 @@ def grep_kernel_sources(kdir: Path, arch: Arch, syscalls: List[Syscall]) -> Iter
 		exclude = {
 			(kdir / 'Documentation').resolve(),
 			(kdir / 'drivers').resolve(),
+			(kdir / 'lib').resolve(),
 			(kdir / 'samples').resolve(),
 			(kdir / 'tools').resolve(),
 		}
@@ -99,6 +100,7 @@ def grep_kernel_sources(kdir: Path, arch: Arch, syscalls: List[Syscall]) -> Iter
 			'rg', '--line-number',
 			'--glob', '!Documentation/*',
 			'--glob', '!drivers/*',
+			'--glob', '!lib/*',
 			'--glob', '!samples/*',
 			'--glob', '!tools/*',
 			'--glob', '!arch/*',           # ignore other architectures (important)
