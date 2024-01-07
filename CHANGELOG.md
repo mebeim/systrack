@@ -1,6 +1,15 @@
 Systrack changelog
 ==================
 
+v0.3.2
+------
+
+**Improvement**:
+
+- Correctly report `futex_{wait,wake,requeue}` depending on `CONFIG_FUTEX=y`.
+- Use unicorn emoji (cuter) instead of test tube for esoteric syscalls in HTML
+  output.
+
 v0.3.1
 ------
 
