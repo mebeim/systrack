@@ -62,7 +62,7 @@ table td {
 }
 
 table td.esoteric::after {
-	content: ' \1f9ea\fe0f';
+	content: ' \1f984\fe0f';
 }
 
 table td.bad::after {
