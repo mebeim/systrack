@@ -1,10 +1,18 @@
 Systrack changelog
 ==================
 
+v0.3.3
+------
+
+**Improvements**:
+
+- Correctly report `lsm_{list_modules,get_self_attr,set_self_attr}` depending on
+  `CONFIG_SECURITY=y`.
+
 v0.3.2
 ------
 
-**Improvement**:
+**Improvements**:
 
 - Correctly report `futex_{wait,wake,requeue}` depending on `CONFIG_FUTEX=y`.
 - Use unicorn emoji (cuter) instead of test tube for esoteric syscalls in HTML
