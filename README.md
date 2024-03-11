@@ -115,7 +115,7 @@ Limitations
 
 ---
 
-*Copyright &copy; 2023 Marco Bonelli. Licensed under the GNU General Public License v3.0.*
+*Copyright &copy; 2023-2024 Marco Bonelli. Licensed under the GNU General Public License v3.0.*
 
 [license-badge]: https://img.shields.io/github/license/mebeim/systrack?color=blue
 [actions-badge]: https://img.shields.io/github/actions/workflow/status/mebeim/systrack/publish.yml?event=release&label=publish
