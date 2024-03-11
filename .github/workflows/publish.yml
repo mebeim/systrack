@@ -17,7 +17,7 @@ jobs:
       name: hatch
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Ensure matching version and release tag
         run: test v"$(python3 src/systrack/version.py)" = "${{github.ref_name}}"
       - name: Install build dependencies
