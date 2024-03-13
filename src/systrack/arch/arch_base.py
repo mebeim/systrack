@@ -1,11 +1,12 @@
 import logging
+
 from abc import ABC, abstractmethod
 from typing import Tuple, List, Type, Optional
 
-from ..syscall import Syscall
 from ..elf import Symbol, ELF
-from ..utils import VersionedDict, anysuffix, noprefix, nosuffix
+from ..syscall import Syscall
 from ..type_hints import KernelVersion, EsotericSyscall
+from ..utils import VersionedDict, anysuffix, noprefix, nosuffix
 
 class Arch(ABC):
 	# Directory name for this arch in the kernel source, under arch/

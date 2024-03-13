@@ -1,6 +1,7 @@
+import logging
 import re
 import sys
-import logging
+
 from enum import IntEnum
 from pathlib import Path
 from struct import unpack

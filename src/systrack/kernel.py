@@ -9,17 +9,17 @@ from operator import itemgetter, attrgetter
 from collections import defaultdict, Counter
 from typing import Tuple, List, Iterator, Union, Any
 
-from .elf import ELF, Symbol, Section
 from .arch import arch_from_name, arch_from_vmlinux
-from .syscall import Syscall, common_syscall_symbol_prefixes
-from .utils import run_command, ensure_command, high_verbosity
-from .utils import maybe_rel, noprefix
-from .location import extract_syscall_locations
-from .signature import extract_syscall_signatures
+from .elf import ELF, Symbol, Section
 from .kconfig import edit_config, edit_config_check_deps
 from .kconfig import kconfig_more_syscalls, kconfig_debugging
 from .kconfig import kconfig_compatibility, kconfig_syscall_deps
+from .location import extract_syscall_locations
+from .signature import extract_syscall_signatures
+from .syscall import Syscall, common_syscall_symbol_prefixes
 from .type_hints import KernelVersion
+from .utils import run_command, ensure_command, high_verbosity
+from .utils import maybe_rel, noprefix
 
 class KernelVersionError(RuntimeError):
 	pass
@@ -34,7 +34,6 @@ class KernelMultiABIError(RuntimeError):
 	pass
 
 class Kernel:
-	__vmlinux         = None
 	__version         = None
 	__version_source  = None
 	__syscalls        = None

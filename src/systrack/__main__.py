@@ -1,17 +1,19 @@
-import os
-import sys
-import signal
-import logging
 import argparse
+import logging
+import os
+import signal
+import sys
+
 from pathlib import Path
 from textwrap import TextWrapper
 
-from .version import VERSION_HELP
-from .kernel import Kernel, KernelVersionError, KernelArchError, KernelWithoutSymbolsError, KernelMultiABIError
-from .utils import eprint, ensure_command, enable_high_verbosity, enable_silent
-from .utils import command_available, gcc_version, git_checkout, maybe_rel, format_duration
 from .arch import SUPPORTED_ARCHS, SUPPORTED_ARCHS_HELP
+from .kernel import Kernel, KernelVersionError, KernelArchError
+from .kernel import KernelWithoutSymbolsError, KernelMultiABIError
 from .output import output_syscalls
+from .utils import eprint, enable_high_verbosity, enable_silent, command_available
+from .utils import gcc_version, git_checkout, maybe_rel, format_duration
+from .version import VERSION_HELP
 
 def sigint_handler(_, __):
 	sys.stderr.write('Caught SIGINT, stopping\n')
@@ -97,7 +99,7 @@ def setup_logging(quietness: int, verbosity: int, colors: bool = True):
 		enable_silent()
 
 	if colors:
-		fmt = '%(color)s[%(levelname)s] %(message)s%(color_reset)s'
+		fmt = '%(color)s[%(levelname)s] %(message)s\x1b[0m'
 		level_colors = {
 			logging.CRITICAL: '\x1b[1;31m',
 			logging.ERROR   : '\x1b[31m',
@@ -110,7 +112,6 @@ def setup_logging(quietness: int, verbosity: int, colors: bool = True):
 			record = orig_factory(*args, **kwargs)
 			lvl = record.levelno
 			record.color = level_colors.get(lvl, '')
-			record.color_reset = '\x1b[0m'
 			record.levelname = 'FATAL' if lvl == logging.CRITICAL else record.levelname[0]
 			return record
 	else:
@@ -118,7 +119,7 @@ def setup_logging(quietness: int, verbosity: int, colors: bool = True):
 
 		def record_factory(*args, **kwargs):
 			record = orig_factory(*args, **kwargs)
-			record.levelname = 'CRIT' if record.levelno == logging.CRITICAL else record.levelname[0]
+			record.levelname = 'FATAL' if record.levelno == logging.CRITICAL else record.levelname[0]
 			return record
 
 	adj = quietness - verbosity
@@ -186,11 +187,11 @@ def main() -> int:
 		eprint(f"See '{sys.argv[0]} --arch help' for a list")
 		return 1
 
-	cross     = args.cross or ''
-	vmlinux   = Path(args.vmlinux) if args.vmlinux else None
-	kdir      = Path(args.kdir)    if args.kdir    else None
-	outdir    = Path(args.out)     if args.out     else None
-	rdir      = Path(args.remap)   if args.remap   else None
+	cross   = args.cross or ''
+	vmlinux = Path(args.vmlinux) if args.vmlinux else None
+	kdir    = Path(args.kdir)    if args.kdir    else None
+	outdir  = Path(args.out)     if args.out     else None
+	rdir    = Path(args.remap)   if args.remap   else None
 
 	# Checkout before building only if not set to auto
 	if args.checkout and args.checkout != 'auto':

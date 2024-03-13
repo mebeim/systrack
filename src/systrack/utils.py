@@ -1,11 +1,12 @@
 import sys
 import logging
-from pathlib import Path
-from typing import Union, Iterable, Tuple, Any, AnyStr, Hashable
-from textwrap import indent
-from subprocess import Popen, DEVNULL, PIPE
+
 from collections import defaultdict
+from pathlib import Path
 from shutil import which
+from subprocess import Popen, DEVNULL, PIPE
+from textwrap import indent
+from typing import Union, Iterable, Tuple, Any, AnyStr, Hashable
 
 class VersionedDict:
 	'''A dict that can have multiple versions with different contents. Accessing

@@ -1,6 +1,7 @@
 import logging
-from pathlib import Path
+
 from operator import itemgetter
+from pathlib import Path
 from struct import unpack, iter_unpack
 from typing import Tuple, List, Iterable, Iterator
 

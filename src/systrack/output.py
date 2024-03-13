@@ -1,12 +1,13 @@
 import sys
+
 from itertools import starmap
+from json import JSONEncoder, dump
 from pathlib import Path
 from typing import Iterable
-from json import JSONEncoder, dump
 
-from .utils import eprint
-from .syscall import Syscall
 from .kernel import Kernel
+from .utils import eprint, noprefix
+from .syscall import Syscall
 from .version import VERSION, VERSION_COPY
 
 class SyscallJSONEncoder(JSONEncoder):
@@ -17,7 +18,7 @@ class SyscallJSONEncoder(JSONEncoder):
 			dikt['symbol'] = o.symbol.name
 			# Let's not waste space and remove CONFIG_ prefixes
 			if o.kconfig:
-				dikt['kconfig'] = o.kconfig.replace('CONFIG_', '')
+				dikt['kconfig'] = noprefix(o.kconfig, 'CONFIG_')
 			return dikt
 
 		if isinstance(o, Path):
@@ -99,7 +100,7 @@ def output_syscalls_json(kernel: Kernel):
 
 def output_syscalls_html(kernel: Kernel):
 	try:
-		from jinja2 import Environment, PackageLoader, select_autoescape
+		from jinja2 import Environment, PackageLoader
 	except ImportError:
 		eprint('HTML output not supported, could not import needed dependencies.')
 		eprint('Install the systrack[html] or systrack[full] package through pip.')

@@ -1,10 +1,10 @@
 from typing import Tuple, List, Type, Optional
 
-from ..syscall import Syscall
 from ..elf import Symbol, ELF, E_MACHINE, E_FLAGS
-from ..utils import VersionedDict, noprefix, nosuffix
-from ..type_hints import KernelVersion, EsotericSyscall
 from ..kconfig_options import VERSION_INF
+from ..syscall import Syscall
+from ..type_hints import KernelVersion, EsotericSyscall
+from ..utils import VersionedDict, noprefix, nosuffix
 
 from .arch_base import Arch
 

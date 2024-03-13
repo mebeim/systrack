@@ -7,13 +7,14 @@
 #
 
 import logging
+
 from pathlib import Path
 from typing import List, Dict, Iterable
 
 from .arch import Arch
 from .kconfig_options import *
-from .utils import ensure_command
 from .type_hints import KernelVersion
+from .utils import ensure_command
 
 def kconfig_debugging(kernel_version: KernelVersion) -> Dict[str,List[str]]:
 	return KCONFIG_DEBUGGING[kernel_version]

@@ -1,12 +1,12 @@
 from struct import iter_unpack
-from operator import itemgetter
 from typing import Tuple, List, Type, Optional
+from operator import itemgetter
 
-from ..syscall import Syscall
 from ..elf import Symbol, ELF, E_MACHINE
-from ..utils import VersionedDict, noprefix
-from ..type_hints import KernelVersion, EsotericSyscall
 from ..kconfig_options import VERSION_ZERO, VERSION_INF
+from ..syscall import Syscall
+from ..type_hints import KernelVersion, EsotericSyscall
+from ..utils import VersionedDict, noprefix
 
 from .arch_base import Arch
 

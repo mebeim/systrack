@@ -1,8 +1,9 @@
+import logging
 import re
 import sys
-import logging
-from pathlib import Path
+
 from operator import attrgetter
+from pathlib import Path
 from typing import Tuple, List, Set, Iterable, Iterator, Optional
 
 from .arch import Arch

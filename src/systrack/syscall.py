@@ -1,13 +1,13 @@
-from typing import List
+from collections import Counter
 from pathlib import Path
 from typing import List
-from collections import Counter
 
 from .elf import Symbol
 
 class Syscall:
 	'''Class representing a Linux syscall.
 	'''
+	# NOTE: do not remove, __slots__ are used used by the JSON encoder
 	__slots__ = (
 		'index', 'number',
 		'name', 'origname', 'symbol',

@@ -1,9 +1,9 @@
 from typing import Tuple, List, Type, Optional
 
 from ..elf import Symbol, ELF, E_MACHINE
-from ..utils import VersionedDict, noprefix
-from ..type_hints import KernelVersion
 from ..kconfig_options import VERSION_ZERO, VERSION_INF
+from ..type_hints import KernelVersion
+from ..utils import VersionedDict, noprefix
 
 from .arch_base import Arch
 
