@@ -273,7 +273,7 @@ def extract_syscall_locations(syscalls: List[Syscall], vmlinux: ELF, kdir: Path,
 					'%s (%s) -> %s:%s', sc.origname, sc.symbol.name, *loc)
 			continue
 
-		if not file.is_relative_to(kdir):
+		if not file.is_relative_to(kdir.resolve()):
 			bad_paths = True
 
 		sc.line = line = adjust_line(file, line)
