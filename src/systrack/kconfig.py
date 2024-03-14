@@ -14,7 +14,7 @@ from typing import List, Dict, Iterable
 from .arch import Arch
 from .kconfig_options import *
 from .type_hints import KernelVersion
-from .utils import ensure_command
+from .utils import anyprefix, ensure_command
 
 def kconfig_debugging(kernel_version: KernelVersion) -> Dict[str,List[str]]:
 	return KCONFIG_DEBUGGING[kernel_version]
@@ -78,8 +78,6 @@ def edit_config_check_deps(kdir: Path, config_file: Path, options: Dict[str,List
 	config = parse_config(config_file)
 
 	for opt, deps in options.items():
-		err = False
-
 		for dep in deps:
 			dep_name, dep_wanted = dep.split('=', 1)
 			dep_actual = toset.get(dep_name) or config.get(dep_name)
@@ -91,14 +89,25 @@ def edit_config_check_deps(kdir: Path, config_file: Path, options: Dict[str,List
 					dep_actual = None
 
 			if dep_actual != dep_wanted:
+				# It's OK if we want =n but it's unset
+				if dep_wanted == 'n' and dep_actual is None:
+					continue
+
 				if dep_actual is None:
-					if dep_wanted == 'n':
-						# It's OK if we want =n but we have undef
-						logging.warn(f'CONFIG_{opt} wants CONFIG_{dep_name}='
-							f'{dep_wanted}, which is undefined. Is the default ok?')
+					dep_name_and_val = f'CONFIG_{dep_name} is not set'
 				else:
-					logging.error(f'CONFIG_{opt} wants CONFIG_{dep_name}='
-						f'{dep_wanted}, but have CONFIG_{dep_name}={dep_actual}'
-						' instead!')
+					dep_name_and_val = f'CONFIG_{dep_name}={dep_actual}'
+
+				# It's ok if we want to enable some config, but we cannot do it
+				# because the arch we are building for doesn't declare support
+				# for one of its dependencies
+				if dep_wanted == 'y' and dep_actual in ('n', None):
+					if anyprefix(dep_name, 'HAVE_', 'ARCH_HAS_'):
+						logging.warning(f"CONFIG_{opt} won't not be set "
+							f'because {dep_name_and_val}')
+						continue
+
+				logging.error(f'CONFIG_{opt} wants CONFIG_{dep_name}='
+					f'{dep_wanted}, but {dep_name_and_val}!')
 
 	edit_config(kdir, config_file, options.keys())
