@@ -125,6 +125,7 @@ KCONFIG_MORE_SYSCALLS = VersionedDict((
 	# TODO: MIGRATION depends on (NUMA || ARCH_ENABLE_MEMORY_HOTREMOVE || COMPACTION || CMA) && MMU
 	# but we do not support expressions to check kconfig dependencies :(
 	((2,6,16)    , VERSION_INF, 'MIGRATION=y'          , ['MMU=y']),
+	(VERSION_ZERO, VERSION_INF, 'MODULE_UNLOAD=y'      , []),
 	(VERSION_ZERO, VERSION_INF, 'MODULES=y'            , []),
 	(VERSION_ZERO, VERSION_INF, 'NET=y'                , []),
 	(VERSION_ZERO, (2,6,29)   , 'NFSD=y'               , ['INET=y']),
@@ -236,6 +237,7 @@ KCONFIG_SYSCALL_DEPS = VersionedDict((
 	(VERSION_ZERO, VERSION_INF, 'remap_file_pages'       , 'MMU'                             ),
 	(VERSION_ZERO, VERSION_INF, 'process_mrelease'       , 'MMU'                             ),
 	((4,3)       , VERSION_INF, 'modify_ldt'             , 'MODIFY_LDT_SYSCALL'              ), # x86 only
+	(VERSION_ZERO, VERSION_INF, 'delete_module'          , 'MODULE_UNLOAD'                   ),
 	(VERSION_ZERO, VERSION_INF, 'init_module'            , 'MODULES'                         ),
 	(VERSION_ZERO, VERSION_INF, 'finit_module'           , 'MODULES'                         ),
 	((4,1)       , VERSION_INF, 'capget'                 , 'MULTIUSER'                       ),
