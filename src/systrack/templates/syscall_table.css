@@ -42,14 +42,6 @@ table th.sortable {
 	cursor: pointer;
 }
 
-table th.ascending::before {
-	content: '\2b07\fe0f\a0';
-}
-
-table th.descending::before {
-	content: '\2b06\fe0f\a0';
-}
-
 table tr.highlight td {
 	background-color: var(--table-row-bg-hover);
 }
@@ -59,19 +51,6 @@ table td {
 	padding: 3px 5px 3px;
 	border: var(--table-border);
 	background-color: var(--table-bg);
-}
-
-table td.esoteric::after {
-	content: ' \1f984\fe0f';
-}
-
-table td.bad::after {
-	content: ' \26a0\fe0f';
-}
-
-table td.unknown {
-	font-family: sans-serif;
-	font-style: italic;
 }
 
 table a {
@@ -86,6 +65,19 @@ table a:visited {
 table span.argtype {
 	color: #006e8f;
 }
+
+table td.unknown {
+	font-family: sans-serif;
+	font-style: italic;
+}
+
+/* Emojis! Use U+202f (narrow no-break space) to space header sort arrows and
+   U+2002 (en space) to space emojis for bad locations and esoteric syscalls. */
+
+table th.ascending::before  { content: '\2b07\fe0f\202f';  }
+table th.descending::before { content: '\2b06\fe0f\202f';  }
+table td.bad::after         { content: '\2002\26a0\fe0f';  }
+table td.esoteric::after    { content: '\2002\1f984\fe0f'; }
 
 @media (any-hover: hover) {
 	table th.sortable:hover {
