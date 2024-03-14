@@ -114,6 +114,7 @@ KCONFIG_MORE_SYSCALLS = VersionedDict((
 	# TODO: FUTEX depends on !(SPARC32 && SMP), but we do not support
 	# expressions to check kconfig dependencies :(
 	(VERSION_ZERO, VERSION_INF, 'FUTEX=y'              , []),
+	(VERSION_ZERO, VERSION_INF, 'INET=y'               , []),
 	((2,6,13)    , (2,6,29)   , 'INOTIFY=y'            , []),
 	((2,6,18)    , VERSION_INF, 'INOTIFY_USER=y'       , []),
 	((5,1)       , VERSION_INF, 'IO_URING=y'           , ['EXPERT=y']),
@@ -129,8 +130,9 @@ KCONFIG_MORE_SYSCALLS = VersionedDict((
 	(VERSION_ZERO, VERSION_INF, 'MODULES=y'            , []),
 	(VERSION_ZERO, VERSION_INF, 'NET=y'                , []),
 	(VERSION_ZERO, (2,6,29)   , 'NFSD=y'               , ['INET=y']),
-	((2,6,29)    , (4,1)      , 'NFSD=y'               , ['INET=y', 'FILE_LOCKING=y', 'FSNOTIFY=y']),
-	((4,1)       , VERSION_INF, 'NFSD=y'               , ['INET=y', 'FILE_LOCKING=y', 'FSNOTIFY=y', 'MULTIUSER=y']),
+	# Though NSFD still exists, nfsservctl was removed in 3.1, so it's pointless
+	# to enable it past that
+	((2,6,29)    , (3,1)      , 'NFSD=y'               , ['INET=y', 'FILE_LOCKING=y', 'FSNOTIFY=y']),
 	((2,6,32)    , VERSION_INF, 'PROFILING=y'          , []),
 	(VERSION_ZERO, VERSION_INF, 'PERF_EVENTS=y'        , ['HAVE_PERF_EVENTS=y']),
 	(VERSION_ZERO, VERSION_INF, 'PCI_SYSCALL=y'        , ['PCI=y']),
