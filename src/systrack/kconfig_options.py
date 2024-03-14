@@ -139,6 +139,7 @@ KCONFIG_MORE_SYSCALLS = VersionedDict((
 	((2,6,30)    , VERSION_INF, 'QUOTA=y'              , []),
 	((4,18)      , VERSION_INF, 'RSEQ=y'               , ['HAVE_RSEQ=y']),
 	((5,10)      , VERSION_INF, 'SECCOMP=y'            , ['HAVE_ARCH_SECCOMP=y']),
+	((5,14)      , VERSION_INF, 'SECRETMEM=y'          , ['ARCH_HAS_SET_DIRECT_MAP=y']),
 	(VERSION_ZERO, VERSION_INF, 'SECURITY=y'           , ['SYSFS=y', 'MULTIUSER=y']),
 	((5,13)      , VERSION_INF, 'SECURITY_LANDLOCK=y'  , ['ARCH_EPHEMERAL_INODES=n']),
 	((3,16)      , VERSION_INF, 'SGETMASK_SYSCALL=y'   , []),
