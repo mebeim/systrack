@@ -210,10 +210,10 @@ class ArchPowerPC(Arch):
 		#
 		# This "fast" implementation depends on PPC_FAST_ENDIAN_SWITCH from
 		# v4.15 onwards. On older kernels (< v5.0) the associated syscall entry
-		# symbol name may be different, and the syscall may also be available
-		# for 32-bit, but we don't really care for now.
+		# symbol name may be different, but we don't really care for now. It
+		# should not be available for 32-bit (compat or not) nor 64-bit SPU.
 		#
-		if self.bits32:
+		if self.abi != 'ppc64':
 			return []
 
 		exc = vmlinux.symbols.get('exc_real_0xc00_system_call')
