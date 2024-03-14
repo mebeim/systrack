@@ -120,10 +120,13 @@ KCONFIG_MORE_SYSCALLS = VersionedDict((
 	((5,12)      , VERSION_INF, 'KCMP=y'               , ['EXPERT=y']),
 	(VERSION_ZERO, VERSION_INF, 'KEYS=y'               , []),
 	((4,3)       , VERSION_INF, 'MEMBARRIER=y'         , []),
+	((4,18)      , (6,6)      , 'MEMFD_CREATE=y'       , []),
+	((6,6)       , VERSION_INF, 'MEMFD_CREATE=y'       , ['EXPERT=y']),
 	# TODO: MIGRATION depends on (NUMA || ARCH_ENABLE_MEMORY_HOTREMOVE || COMPACTION || CMA) && MMU
 	# but we do not support expressions to check kconfig dependencies :(
 	((2,6,16)    , VERSION_INF, 'MIGRATION=y'          , ['MMU=y']),
 	(VERSION_ZERO, VERSION_INF, 'MODULES=y'            , []),
+	(VERSION_ZERO, VERSION_INF, 'NET=y'                , []),
 	(VERSION_ZERO, (2,6,29)   , 'NFSD=y'               , ['INET=y']),
 	((2,6,29)    , (4,1)      , 'NFSD=y'               , ['INET=y', 'FILE_LOCKING=y', 'FSNOTIFY=y']),
 	((4,1)       , VERSION_INF, 'NFSD=y'               , ['INET=y', 'FILE_LOCKING=y', 'FSNOTIFY=y', 'MULTIUSER=y']),
@@ -235,7 +238,6 @@ KCONFIG_SYSCALL_DEPS = VersionedDict((
 	((4,3)       , VERSION_INF, 'modify_ldt'             , 'MODIFY_LDT_SYSCALL'              ), # x86 only
 	(VERSION_ZERO, VERSION_INF, 'init_module'            , 'MODULES'                         ),
 	(VERSION_ZERO, VERSION_INF, 'finit_module'           , 'MODULES'                         ),
-	(VERSION_ZERO, VERSION_INF, 'delete_module'          , 'MODULES'                         ),
 	((4,1)       , VERSION_INF, 'capget'                 , 'MULTIUSER'                       ),
 	((4,1)       , VERSION_INF, 'capset'                 , 'MULTIUSER'                       ),
 	((4,1)       , VERSION_INF, 'setuid'                 , 'MULTIUSER'                       ),
