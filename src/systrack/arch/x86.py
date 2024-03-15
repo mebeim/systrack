@@ -33,6 +33,20 @@ class ArchX86(Arch):
 		(VERSION_ZERO, VERSION_INF, 'pkey_mprotect', 'X86_INTEL_MEMORY_PROTECTION_KEYS'),
 	))
 
+	# Numbers marked as "64" in syscall_64.tbl before v5.4 (when x64 and x32
+	# still shared the same table), which should therefore NOT be used in x32
+	# mode. These also include the (lower) x64 numbers for the misnumbered
+	# 512-547 syscalls.
+	#
+	#     cat arch/x86/entry/syscalls/syscall_64.tbl | rg '\t64' | cut -f1
+	#
+	__bad_x32_numbers = {
+		13, 15, 16, 19, 20, 45, 46, 47, 54, 55, 59, 101, 127, 128, 129, 131,
+		134, 156, 174, 177, 178, 180, 205, 206, 209, 211, 214, 215, 222, 236,
+		244, 246, 247, 273, 274, 278, 279, 295, 296, 297, 299, 307, 310, 311,
+		322, 327, 328
+	}
+
 	def __init__(self, kernel_version: KernelVersion, abi: str, bits32: bool = False):
 		super().__init__(kernel_version, abi, bits32)
 		assert self.abi in ('x64', 'ia32', 'x32')
@@ -53,8 +67,8 @@ class ArchX86(Arch):
 
 		if self.bits32:
 			assert self.abi == 'ia32'
-			self.abi_bits32       = True
-			self.config_target    = 'i386_defconfig'
+			self.abi_bits32    = True
+			self.config_target = 'i386_defconfig'
 
 			# vm86 (x86 only, 32-bit only, no compat support in 64-bit kernels)
 			self.kconfig.add((2,6,16), (2,6,18)   , 'VM86=y'           , ['X86=y', 'EMBEDDED=y']),
@@ -168,21 +182,63 @@ class ArchX86(Arch):
 
 	def skip_syscall(self, sc: Syscall) -> bool:
 		# Syscalls 512 through 547 are historically misnumbered and x32 only,
-		# see comment in arch/x86/entry/syscalls/syscall_64.tbl
-		if self.abi != 'x32' and 512 <= sc.number <= 547:
+		# see comment in v5.10 arch/x86/entry/syscalls/syscall_64.tbl.
+		#
+		# x32 should only use the x32 numbers (512-547) ORed with the special
+		# __X32_SYSCALL_BIT, and NOT the x64 numbers for the same syscalls.
+		# x64 should use the x64 numbers and NOT the x32 numbers (512-547) for
+		# the same syscalls.
+		#
+		# The checks performed by the kernel (mostly in do_syscall_64() under
+		# arch/x86/entry/common.c) however are completely idiotic, and the fact
+		# that before v5.4 there is only one syscall table for both x64 and x32
+		# does not help: this makes it technically possible to mix up the
+		# numbers in funny ways.
+		#
+		# In fact, in v5.3, execve can be called using *four* different numbers
+		# from both x64 and x32 mode (determining which number/mode combination
+		# will result in rax=-EFAULT is left as an exercise to the reader):
+		#
+		#   1. 0x3b      : the x64 number
+		#                  (techincally only correct for x64 mode)
+		#   2. 0x208     : the x32 number without __X32_SYSCALL_BIT set
+		#                  (techincally incorrect in both modes)
+		#   3. 0x4000003b: the x64 number with __X32_SYSCALL_BIT set
+		#                  (techincally incorrect in both modes)
+		#   4. 0x40000208: the x32 number with __X32_SYSCALL_BIT set
+		#                  (techincally only correct for x32 mode)
+		#
+		# In v5.4 (commit 6365b842aae4490ebfafadfc6bb27a6d3cc54757) a separate
+		# x32 syscall table was introduced to try and make things less
+		# confusing. After this commit, options 2 and 3 above give -ENOSYS,
+		# while 1 and 4 both work (again, try to guess which number/mode combo
+		# will result in rax=-EFAULT).
+		#
+		if self.abi == 'x64' and 512 <= sc.number <= 547:
+			# x64 cannot use x32 numbers even though they are in the table
 			return True
 
-		# vm86 and vm86old are only available in 32-bit kernels, but might still
-		# be implemented as simple wrappers that print a warning to dmesg and
-		# return -ENOSYS in 64-bit kernels, so ignore them
-		if self.abi == 'ia32' and not self.bits32 and sc.number in (113, 166):
-			return True
+		if self.abi == 'x32':
+			if self.kernel_version >= (5,4):
+				# We have our own table, anything we find there is acceptable
+				return False
 
-		# pkey_{alloc,free,mprotect} can exist for compat 32-bit mode on 64-bit
-		# kernels (interesting), but definitely do not exist for 32-bit kernels,
-		# so avoid wasting time with these
-		if self.abi == 'ia32' and self.bits32 and sc.number in (380, 381, 382):
-			return True
+			if (sc.number & ~0x40000000) in self.__bad_x32_numbers:
+				# x32 should NOT use these!
+				return True
+
+		if self.abi == 'ia32':
+			# vm86 and vm86old are only available in 32-bit kernels, but might
+			# still be implemented as simple wrappers that print a warning to
+			# dmesg and return -ENOSYS in 64-bit kernels, so ignore them
+			if not self.bits32 and sc.number in (113, 166):
+				return True
+
+			# pkey_{alloc,free,mprotect} can exist for compat 32-bit mode on
+			# 64-bit kernels (interesting), but definitely do not exist for
+			# 32-bit kernels, so avoid wasting time with these
+			if self.bits32 and sc.number in (380, 381, 382):
+				return True
 
 		return False
 
