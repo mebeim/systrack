@@ -158,6 +158,7 @@ def main() -> int:
 
 	args = parse_args()
 	setup_logging(args.quiet, args.verbose, os.isatty(sys.stderr.fileno()))
+	logging.debug('Command line arguments: %r', sys.argv[1:])
 
 	arch_name = args.arch
 
