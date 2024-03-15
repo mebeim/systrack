@@ -103,8 +103,8 @@ def edit_config_check_deps(kdir: Path, config_file: Path, options: Dict[str,List
 				# for one of its dependencies
 				if dep_wanted == 'y' and dep_actual in ('n', None):
 					if anyprefix(dep_name, 'HAVE_', 'ARCH_HAS_'):
-						logging.warning(f"CONFIG_{opt} won't not be set "
-							f'because {dep_name_and_val}')
+						logging.warning(f"CONFIG_{opt} won't be set because "
+							f'{dep_name_and_val}')
 						continue
 
 				logging.error(f'CONFIG_{opt} wants CONFIG_{dep_name}='
