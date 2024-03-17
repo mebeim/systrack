@@ -64,7 +64,6 @@ class ArchArm64(Arch):
 		if b.name.startswith('__arm64_'): return b
 		return super().preferred_symbol(a, b)
 
-	def normalize_syscall_name(self, name: str) -> str:
-		name = super().normalize_syscall_name(name)
+	def _normalize_syscall_name(self, name: str) -> str:
 		# E.g. v5.18 COMPAT_SYSCALL_DEFINE6(aarch32_mmap2, ...)
 		return noprefix(name, 'aarch32_')

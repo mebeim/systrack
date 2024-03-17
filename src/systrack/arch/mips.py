@@ -107,8 +107,7 @@ class ArchMips(Arch):
 			return c
 		return super().preferred_symbol(a, b)
 
-	def normalize_syscall_name(self, name: str) -> str:
-		name = super().normalize_syscall_name(name)
+	def _normalize_syscall_name(self, name: str) -> str:
 		# E.g. v5.1 asmlinkage int sysm_pipe(void) for weird historical reasons
 		# E.g. v5.18 SYSCALL_DEFINE6(mips_mmap, ...)
 		return noprefix(name, 'sysm_', 'mips_')

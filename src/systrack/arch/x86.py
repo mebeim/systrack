@@ -261,8 +261,7 @@ class ArchX86(Arch):
 		# want to become insane to accomodate all these quirks.
 		return noprefix(sym_name, 'stub32_', 'stub_')
 
-	def normalize_syscall_name(self, name: str) -> str:
-		name = super().normalize_syscall_name(name)
+	def _normalize_syscall_name(self, name: str) -> str:
 		# E.g. v5.18 COMPAT_SYSCALL_DEFINE1(ia32_mmap, ...)
 		return noprefix(name, 'ia32_', 'x86_', 'x32_')
 

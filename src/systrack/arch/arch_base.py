@@ -177,18 +177,23 @@ class Arch(ABC):
 		return noprefix(sym_name, 'ptregs_sys_', 'ptregs_compat_sys_',
 			'__se_compat_sys_', '__se_sys_', '__sys_', 'compat_sys_')
 
+	def _normalize_syscall_name(self, name: str) -> str:
+		'''Normalize a syscall name possibly stripping unneeded arch-specific
+		prefixes/suffixes (e.g., "ia32_", "aarch32_", "oabi_", "ppc_" etc.).
+		These are prefixes/suffixes that are ACTUALLY PRESENT IN THE SOURCE,
+		and not just in the symbol name.
+		'''
+		return name
+
 	def normalize_syscall_name(self, name: str) -> str:
 		'''Normalize a syscall name removing unneeded prefixes and suffixes.
 		These are prefixes/suffixes that are ACTUALLY PRESENT IN THE SOURCE,
 		and not just in the symbol name.
-
-		This generic method oly handles common prefixes/suffixes. Arch-specific
-		ones (e.g. "ia32_", "aarch32_", "oabi_") will have to be handled by the
-		appropriate subclass.
-
-		NOTE: always call super().normalize_syscall_name() from subclasses to
-		strip common prefixes/suffixes before stripping arch-specific ones.
 		'''
+		# NOTE: subclesses should NOT override this method and override
+		# ._normalize_syscall_name() above instead, so that common prefixes are
+		# always stripped first.
+
 		# In theory we could also remove the trailing "16" from 16-bit UID
 		# syscalls (setuid16, chown16, etc.) since it's not the real syscall
 		# name, but that'd make the output a bit confusing because we'd have
@@ -227,7 +232,8 @@ class Arch(ABC):
 		#     SYSCALL_DEFINE2(old_getrlimit, ...) -> getrlimit
 		#     SYSCALL_DEFINE1(oldumount, ...)     -> oldumount (leave it be)
 		#
-		return noprefix(name, 'old_')
+		name = noprefix(name, 'old_')
+		return self._normalize_syscall_name(name)
 
 	def _dummy_syscall_code(self, sc: Syscall, vmlinux: ELF) -> Optional[bytes]:
 		'''Determine whether a syscall has a dummy implementation (e.g. one that

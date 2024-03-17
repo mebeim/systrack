@@ -180,8 +180,7 @@ class ArchPowerPC(Arch):
 	def translate_syscall_symbol_name(self, sym_name: str) -> str:
 		return super().translate_syscall_symbol_name(noprefix(sym_name, '.sys_', '.'))
 
-	def normalize_syscall_name(self, name: str) -> str:
-		name = super().normalize_syscall_name(name)
+	def _normalize_syscall_name(self, name: str) -> str:
 		return noprefix(name, 'ppc64_', 'ppc32_', 'ppc_')
 
 	def adjust_syscall_number(self, number: int) -> int:

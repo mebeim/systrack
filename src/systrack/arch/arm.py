@@ -105,8 +105,7 @@ class ArchArm(Arch):
 		# code grepping.
 		return nosuffix(sym_name, '_wrapper')
 
-	def normalize_syscall_name(self, name: str) -> str:
-		name = super().normalize_syscall_name(name)
+	def _normalize_syscall_name(self, name: str) -> str:
 		if self.abi == 'oabi':
 			# E.g. v5.18 asmlinkage long sys_oabi_connect(...)
 			name = noprefix(name, 'oabi_')
