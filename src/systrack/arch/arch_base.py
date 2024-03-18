@@ -55,8 +55,9 @@ class Arch(ABC):
 	# Additional kconfig options to set
 	kconfig: VersionedDict = VersionedDict()
 
-	# Arch-specific syscall kconfig options dependency (see the comment in
-	# kconfig_options.py to know how to fill this)
+	# Arch-specific syscall kconfig options dependency (supersedes global
+	# arch-agnostic KCONFIG_SYSCALL_DEPS (see the comment in kconfig_options.py
+	# to know how to fill this)
 	kconfig_syscall_deps: VersionedDict = VersionedDict()
 
 	def __init__(self, kernel_version: KernelVersion, abi: str, bits32: bool):

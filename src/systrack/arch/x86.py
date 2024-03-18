@@ -234,9 +234,9 @@ class ArchX86(Arch):
 			if not self.bits32 and sc.number in (113, 166):
 				return True
 
-			# pkey_{alloc,free,mprotect} can exist for compat 32-bit mode on
-			# 64-bit kernels (interesting), but definitely do not exist for
-			# 32-bit kernels, so avoid wasting time with these
+			# pkey_{alloc,free,mprotect} are available for compat ia32 on
+			# 64-bit, but not for 32-bit kernels (on x86 they depend X86_64=y),
+			# so avoid wasting time with these
 			if self.bits32 and sc.number in (380, 381, 382):
 				return True
 
