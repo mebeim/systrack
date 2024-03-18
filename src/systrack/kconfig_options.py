@@ -142,17 +142,17 @@ KCONFIG_MORE_SYSCALLS = VersionedDict((
 	((4,18)      , VERSION_INF, 'RSEQ=y'               , ['HAVE_RSEQ=y']),
 	((5,10)      , VERSION_INF, 'SECCOMP=y'            , ['HAVE_ARCH_SECCOMP=y']),
 	((5,14)      , VERSION_INF, 'SECRETMEM=y'          , ['ARCH_HAS_SET_DIRECT_MAP=y']),
-	(VERSION_ZERO, VERSION_INF, 'SECURITY=y'           , ['SYSFS=y', 'MULTIUSER=y']),
+	(VERSION_ZERO, (4,1)      , 'SECURITY=y'           , ['SYSFS=y']),
+	((4,1)       , VERSION_INF, 'SECURITY=y'           , ['SYSFS=y', 'MULTIUSER=y']),
 	((5,13)      , VERSION_INF, 'SECURITY_LANDLOCK=y'  , ['ARCH_EPHEMERAL_INODES=n']),
 	((3,16)      , VERSION_INF, 'SGETMASK_SYSCALL=y'   , []),
 	((2,6,22)    , VERSION_INF, 'SIGNALFD=y'           , ['EXPERT=y']),
 	(VERSION_ZERO, (5,5)      , 'SYSCTL_SYSCALL=y'     , ['PROC_SYSCTL=y']),
 	((3,15)      , VERSION_INF, 'SYSFS_SYSCALL=y'      , []),
 	(VERSION_ZERO, VERSION_INF, 'SYSVIPC=y'            , []),
-	# NOTE: MIPS does not define HAVE_UID16, we'll get a warning log when trying
-	# to enable UID16, but that's fine.
 	(VERSION_ZERO, (2,6,16)   , 'UID16=y'              , []),
-	((2,6,16)    , VERSION_INF, 'UID16=y'              , ['EXPERT=y', 'HAVE_UID16=y', 'MULTIUSER=y']),
+	((2,6,16)    , (4,1)      , 'UID16=y'              , ['EXPERT=y', 'HAVE_UID16=y']),
+	((4,1)       , VERSION_INF, 'UID16=y'              , ['EXPERT=y', 'HAVE_UID16=y', 'MULTIUSER=y']),
 	((4,3)       , VERSION_INF, 'USERFAULTFD=y'        , ['MMU=y']),
 	((3,15)      , VERSION_INF, 'USELIB=y'             , []),
 ))
