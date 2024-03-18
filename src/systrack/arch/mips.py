@@ -13,12 +13,10 @@ class ArchMips(Arch):
 
 	kconfig = VersionedDict((
 		# kexec[_file]_load
-		((2,6,20)    , (3,9)      , 'KEXEC=y'  , ['EXPERIMENTAL=y']),
-		((3,9)       , VERSION_INF, 'KEXEC=y'  , []),
+		((2,6,20), (3,9)      , 'KEXEC=y'  , ['EXPERIMENTAL=y']),
+		((3,9)   , VERSION_INF, 'KEXEC=y'  , []),
 		# seccomp
-		((2,6,15)    , (5,10)     , 'SECCOMP=y', []),
-		# mbind, migrate_pages, {get,set}_mempolicy
-		(VERSION_ZERO, VERSION_INF, 'NUMA=y'   , ['SYS_SUPPORTS_NUMA=y'])
+		((2,6,15), (5,10)     , 'SECCOMP=y', []),
 	))
 
 	def __init__(self, kernel_version: KernelVersion, abi: str, bits32: bool = False):
@@ -64,13 +62,20 @@ class ArchMips(Arch):
 		else:
 			self.compat = self.abi != 'n64'
 
-			# Grab SGI IP27 (Origin200/2000), which apparently is the only MIPS
-			# machine with NUMA support (wut?). No need to select CPU release
-			# for this, it's R10000.
+			# Grab SGI IP27 (Origin200/2000), which apparently is one of the
+			# only two MIPS machine with NUMA support along with Longsoon64
+			# (loongson3_defconfig), as the latter is more of a pain in the ass
+			# to build. No need to select CPU release for this, it's R10000.
 			self.config_target = 'ip27_defconfig'
 
 			self.kconfig.add(VERSION_ZERO, VERSION_INF, '32BIT=n', [])
 			self.kconfig.add(VERSION_ZERO, VERSION_INF, '64BIT=y', [])
+
+			# 32-bit has no NUMA support (apparently), but 64-bit does and
+			# ip27_defconfig should include it. Make sure an error is raised in
+			# case of no NUMA. Needed for mbind, migrate_pages,
+			# {get,set}_mempolicy.
+			self.kconfig.add(VERSION_ZERO, VERSION_INF, 'NUMA=y', ['SYS_SUPPORTS_NUMA=y'])
 
 			# MIPS 64bit supports all ABIs: 32bit o32, 64bit n32, 64bit n64.
 			# Enable all of them regardless, we will be able to extract the
