@@ -22,7 +22,7 @@ SUPPORTED_ARCHS = {
 	'mips64'       : lambda v: ArchMips(v, abi='n64'),
 	'mips64-n32'   : lambda v: ArchMips(v, abi='n32'),
 	'mips64-o32'   : lambda v: ArchMips(v, abi='o32'),
-#	'powerpc'      : lambda v: ArchPowerPC(v, abi='ppc32', bits32=True), # "32" ABI TODO
+	'powerpc'      : lambda v: ArchPowerPC(v, abi='ppc32', bits32=True), # "32" ABI
 	'powerpc64'    : lambda v: ArchPowerPC(v, abi='ppc64'),              # "64" ABI
 	'powerpc64-32' : lambda v: ArchPowerPC(v, abi='ppc32'),              # "32" ABI
 	'powerpc64-spu': lambda v: ArchPowerPC(v, abi='spu'),
@@ -45,8 +45,8 @@ ARCH_ALIASES = (
 	('mips64'       , 'n64'       ),
 	('mips64-n32'   , 'n32'       ),
 	('mips64-o32'   , 'o32-64'    ),
-#	('powerpc'      , 'ppc'       ), TODO
-#	('powerpc'      , 'ppc32'     ), TODO
+	('powerpc'      , 'ppc'       ),
+	('powerpc'      , 'ppc32'     ),
 	('powerpc64'    , 'ppc64'     ),
 	('powerpc64-32' , 'ppc64-32'  ),
 	('powerpc64-spu', 'ppc64-spu' ),
@@ -76,6 +76,7 @@ Supported architectures and ABIs (values are case-insensitive):
     mips64-n32     n32             MIPS     64-bit  64-bit N32      ip27_defconfig      [1]
     mips64-o32     o32-64          MIPS     64-bit  32-bit O32      ip27_defconfig      [1]
     -----------------------------------------------------------------------------------------
+    powerpc        ppc, ppc32      PowerPC  32-bit  32-bit PPC32    ppc64_defconfig
     powerpc64      ppc64           PowerPC  64-bit  64-bit PPC64    ppc64_defconfig     [1]
     powerpc64-32   ppc64-32        PowerPC  64-bit  32-bit PPC32    ppc64_defconfig     [1]
     powerpc64-spu  ppc64-spu, spu  PowerPC  64-bit  64-bit "SPU"    ppc64_defconfig     [1,5]

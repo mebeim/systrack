@@ -22,7 +22,8 @@ class ArchPowerPC(Arch):
 	# (v5.0) explains, they can only use a subset of the syscalls defined for
 	# the "64" ABI.
 
-	# NOTE: we are assuming to have PPC_BOOK3S=y
+	# NOTE: we are assuming to have PPC_BOOK3S=y (and therefore PPC_BOOK3S_32=y
+	# for 32-bit or PPC_BOOK3S_64=y for 64-bit)
 	kconfig = VersionedDict((
 		# These are needed for RELOCATABLE=n, we do not really need to list
 		# dependencies since we are disabling them.
@@ -33,18 +34,19 @@ class ArchPowerPC(Arch):
 		((3,4)       , VERSION_INF, 'FA_DUMP=n'               , []),
 		# Needs to be set here too because arch-specific kconfigs are applied
 		# after those listed in KCONFIG_DEBUGGING (kconfig_options.py)
-		(VERSION_ZERO, VERSION_INF, 'RELOCATABLE=n'           , ['PPC_OF_BOOT_TRAMPOLINE=n', 'CRASH_DUMP=n', 'FA_DUMP=n']),
+		(VERSION_ZERO, VERSION_INF, 'RELOCATABLE=n', ['PPC_OF_BOOT_TRAMPOLINE=n', 'CRASH_DUMP=n', 'FA_DUMP=n']),
 		# kexec_load
-		((2,6,15)    , (3,9)      , 'KEXEC=y'                 , ['PPC_BOOK3S=y']),
-		((3,9)       , VERSION_INF, 'KEXEC=y'                 , ['PPC_BOOK3S=y', 'EXPERIMENTAL=y']),
+		((2,6,15)    , (3,9)      , 'KEXEC=y', ['PPC_BOOK3S=y', 'EXPERIMENTAL=y']),
+		((3,9)       , VERSION_INF, 'KEXEC=y', ['PPC_BOOK3S=y']),
 		# seccomp
-		((2,6,15)    , (5,10)     , 'SECCOMP=y'               , ['PROC_FS=y']),
+		((2,6,15)    , (5,10)     , 'SECCOMP=y', ['PROC_FS=y']),
 		# rtas
-		((2,6,15)    , VERSION_INF, 'PPC_RTAS=y'              , []),
-		# spu_run, spu_create
-		((2,6,16)    , VERSION_INF, 'SPU_FS=y'                , ['PPC_CELL=y', 'COREDUMP=y']),
-		((2,6,18)    , VERSION_INF, 'SPU_BASE=y'              , []),
+		((2,6,15)    , VERSION_INF, 'PPC_RTAS=y', []),
 	))
+
+	# FIXME: more like a curiosity, but why the hell do migrate_pages and
+	# move_pages look like they depend on MIGRATION and not necessarily on NUMA,
+	# but then aren't available for PPC 32-bit which has NUMA=n???
 
 	kconfig_syscall_deps = VersionedDict((
 		(VERSION_ZERO, VERSION_INF, 'pkey_alloc'   , 'PPC_MEM_KEYS'),
@@ -56,9 +58,6 @@ class ArchPowerPC(Arch):
 		super().__init__(kernel_version, abi, bits32)
 		assert self.abi in ('ppc32', 'ppc64', 'spu')
 
-		# TODO
-		assert not self.bits32, 'PPC 32-bit not supported yet'
-
 		# The "powerpc" directory was added under arch in v2.6.15 and it weirdly
 		# coexisted with "ppc" until v2.6.27, when the latter was removed.
 		assert self.kernel_version >= (2,6,15), 'kernel too old, sorry!'
@@ -66,7 +65,7 @@ class ArchPowerPC(Arch):
 		if self.abi == 'spu':
 			# spu_syscall_table only exists since v2.6.16, I have no idea how
 			# things were handled before then. This is a rather old kernel
-			# version, we'll worry about it in the future.
+			# version, we'll worry about it in the future (if ever).
 			assert self.kernel_version >= (2,6,16), 'kernel too old, sorry!'
 
 		if self.abi == 'ppc32':
@@ -77,14 +76,27 @@ class ArchPowerPC(Arch):
 			self.abi_bits32 = False
 
 		if self.bits32:
-			# TODO: which one?
-			self.config_target = None
 			self.compat = False
-		else:
-			self.uses_function_descriptors = True
+			self.uses_function_descriptors = False
+			self.syscall_table_name = 'sys_call_table'
+
+			# PPC_BOOK3S_32 was introduced in v2.6.31. We'll worry about
+			# older kernels in the future (if ever).
+			assert self.kernel_version >= (2,6,31), 'kernel too old, sorry!'
+
+			# Apparently there isn't a nice 32-bit defconfig and one needs
+			# to manually disable 64-bit??? What in tarnation >:( lame!
+			# There's ppc_defconfig from v5.2, which also takes half the time to
+			# build so it'd be nice to use... but using it as is without tweaks
+			# compiles a kernel without memfd_create.
 			self.config_target = 'ppc64_defconfig'
-			self.abi_bits32 = self.abi == 'ppc32'
+			self.kconfig.add(VERSION_ZERO, VERSION_INF, 'PPC64=n', [])
+			self.kconfig.add(VERSION_ZERO, VERSION_INF, 'PPC_BOOK3S_32=y', [])
+		else:
 			self.compat = self.abi != 'ppc64'
+			self.abi_bits32 = self.abi == 'ppc32'
+			self.config_target = 'ppc64_defconfig'
+			self.uses_function_descriptors = True
 
 			if self.abi == 'spu':
 				self.syscall_table_name = 'spu_syscall_table'
@@ -96,29 +108,32 @@ class ArchPowerPC(Arch):
 
 			# PowerPC64 supports all ABIs: 64, 32, "spu". Enable all of them, we
 			# will be able to extract the right syscall table regardless.
-			self.kconfig.add((2,6,15), (5,7)      , 'COMPAT=y'          , ['PPC64=y'])
-			self.kconfig.add((5,7)   , VERSION_INF, 'COMPAT=y'          , ['PPC64=y', 'CPU_LITTLE_ENDIAN=n', 'CC_IS_CLANG=n'])
+			self.kconfig.add((2,6,15), (5,7)      , 'COMPAT=y', ['PPC64=y'])
+			self.kconfig.add((5,7)   , VERSION_INF, 'COMPAT=y', ['PPC64=y', 'CPU_LITTLE_ENDIAN=n', 'CC_IS_CLANG=n'])
 
 			# Needed for NUMA=y
-			self.kconfig.add((2,6,15), (2,6,22)   , 'PPC_PSERIES=y'     , ['PPC64=y', 'PPC_MULTIPLATFORM=y']),
-			self.kconfig.add((2,6,22), VERSION_INF, 'PPC_PSERIES=y'     , ['PPC64=y', 'PPC_BOOK3S=y']),
+			self.kconfig.add((2,6,15), (2,6,22)   , 'PPC_PSERIES=y', ['PPC64=y', 'PPC_MULTIPLATFORM=y']),
+			self.kconfig.add((2,6,22), VERSION_INF, 'PPC_PSERIES=y', ['PPC64=y', 'PPC_BOOK3S=y']),
 			# mbind, migrate_pages, {get,set}_mempolicy
 			#   NOTE: in theory depends on (PPC_PSERIES || PPC_POWERNV) after
 			#   5.10, but we are assuming PPC_PSERIES=y
-			self.kconfig.add((2,6,15), VERSION_INF, 'NUMA=y'            , ['PPC64=y', 'SMP=y', 'PPC_PSERIES=y'])
+			self.kconfig.add((2,6,15), VERSION_INF, 'NUMA=y', ['PPC64=y', 'SMP=y', 'PPC_PSERIES=y'])
 			# kexec_file_load
-			self.kconfig.add((4,10)  , VERSION_INF, 'KEXEC_FILE=y'      , ['PPC64=y', 'CRYPTO=y', 'CRYPTO_SHA256=y'])
+			self.kconfig.add((4,10)  , VERSION_INF, 'KEXEC_FILE=y', ['PPC64=y', 'CRYPTO=y', 'CRYPTO_SHA256=y'])
 			# Needed for PPC_SUBPAGE_PROT=y
 			#   NOTE: in theory depends on (44x || PPC_BOOK3S_64), but we are
 			#   assuming PPC_BOOK3S_64=y
-			self.kconfig.add((2,6,15), VERSION_INF, 'PPC_64K_PAGES=y'   , ['PPC_BOOK3S_64=y'])
+			self.kconfig.add((2,6,15), VERSION_INF, 'PPC_64K_PAGES=y', ['PPC_BOOK3S_64=y'])
 			# subpage_prot (ppc only, 64-bit only)
 			self.kconfig.add((2,6,25), (5,9)      , 'PPC_SUBPAGE_PROT=y', ['PPC_64K_PAGES=y', 'PPC_BOOK3S_64=y'])
 			self.kconfig.add((5,9)   , VERSION_INF, 'PPC_SUBPAGE_PROT=y', ['PPC_64K_PAGES=y', 'PPC_64S_HASH_MMU=y'])
 			# pkey_alloc, pkey_free, pkey_mprotect
-			self.kconfig.add((4,16)  , VERSION_INF, 'PPC_MEM_KEYS=y'    , ['PPC_BOOK3S_64=y', 'PPC_64S_HASH_MMU=y'])
+			self.kconfig.add((4,16)  , VERSION_INF, 'PPC_MEM_KEYS=y', ['PPC_BOOK3S_64=y', 'PPC_64S_HASH_MMU=y'])
 			# switch_endian (esoteric fast version)
 			self.kconfig.add((4,15)  , VERSION_INF, 'PPC_FAST_ENDIAN_SWITCH=y', []),
+			# spu_run, spu_create
+			self.kconfig.add((2,6,16), VERSION_INF, 'SPU_FS=y'  , ['PPC_CELL=y', 'COREDUMP=y']),
+			self.kconfig.add((2,6,18), VERSION_INF, 'SPU_BASE=y', []),
 
 	@staticmethod
 	def match(vmlinux: ELF) -> Optional[Tuple[Type[Arch],bool,List[str]]]:
@@ -132,8 +147,17 @@ class ArchPowerPC(Arch):
 		if vmlinux.bits32:
 			abis = ['ppc32']
 		else:
-			# 64-bit PowerPC kernels seem to always include both ABIs.
-			abis = ['ppc64', 'ppc32']
+			abis = ['ppc64']
+
+			# v5.0+ has a separate compat table and can be built with COMPAT=n.
+			# Before v5.0 64-bit and 32-bit syscalls share a single table and
+			# apparently it's always COMPAT=y. If none of these match, we must
+			# be dealing with a v5.0+ COMPAT=n kernel, which is the only case
+			# where there's no 32-bit syscall table.
+			if 'compat_sys_call_table' in vmlinux.symbols \
+					or 'compat_sys_execve' in vmlinux.symbols \
+					or '.compat_sys_execve' in vmlinux.symbols:
+				abis.append('ppc32')
 
 			if 'spu_syscall_table' in vmlinux.symbols:
 				abis.append('spu')
@@ -141,6 +165,9 @@ class ArchPowerPC(Arch):
 		return ArchPowerPC, vmlinux.bits32, abis
 
 	def matches(self, vmlinux: ELF) -> bool:
+		# Linux PPC 32-bit should be big-endian only, and  _dummy_syscall_code()
+		# below also relies on this
+		assert vmlinux.big_endian, 'Little-endian PowerPC 32-bit kernel? WAT'
 		return (
 			vmlinux.e_machine == (E_MACHINE.EM_PPC64, E_MACHINE.EM_PPC)[self.bits32]
 			and vmlinux.bits32 == self.bits32
@@ -182,6 +209,85 @@ class ArchPowerPC(Arch):
 
 	def _normalize_syscall_name(self, name: str) -> str:
 		return noprefix(name, 'ppc64_', 'ppc32_', 'ppc_')
+
+	def _dummy_syscall_code(self, sc: Syscall, vmlinux: ELF) -> Optional[bytes]:
+		# Check for `li r3,-ENOSYS; blr` optionally accompained by some other
+		# known non-branching instructions along the way:
+		#
+		#   - {mflr,mtlr} r0
+		#   - {stw,std,lwz,ld} r0,X(r1)
+		#   - matching stwu/stdu and addi on r1 (stack pointer)
+		#   - bl (to call _mcount() or other func, which *has* to return)
+		#   - nop (ori 0,0,0)
+		#
+		# Some examples:
+		#
+		# <sys_migrate_pages>: (32-bit, v6.8)
+		#        7c 08 02 a6     mflr    r0
+		#        90 01 00 04     stw     r0,4(r1)
+		#        4b f9 20 11     bl      c0039860 <_mcount>
+		#        94 21 ff f0     stwu    r1,-16(r1)
+		#        38 60 ff da     li      r3,-38
+		#        38 21 00 10     addi    r1,r1,16
+		#        4e 80 00 20     blr
+		#
+		# <.sys_ni_syscall>: (64-bit, v5.0)
+		#        7c 08 02 a6     mflr    r0
+		#        f8 01 00 10     std     r0,16(r1)
+		#        f8 21 ff 91     stdu    r1,-112(r1)
+		#        4b ee 47 45     bl      c0000000000707e0 <._mcount>
+		#        60 00 00 00     nop
+		#        38 21 00 70     addi    r1,r1,112
+		#        38 60 ff da     li      r3,-38
+		#        e8 01 00 10     ld      r0,16(r1)
+		#        7c 08 03 a6     mtlr    r0
+		#        4e 80 00 20     blr
+		#        60 00 00 00     nop
+		#        60 00 00 00     nop
+		#
+		# TODO: relies on the symbol having a valid size (!= 0), improve?
+		if sc.symbol.size < 8:
+			return None
+
+		code = vmlinux.read_symbol(sc.symbol)
+		r1_dec = r1_inc = None
+		insns = []
+
+		for insn in map(itemgetter(0), iter_unpack('<>'[vmlinux.big_endian] + 'L', code)):
+			hi = insn >> 16
+
+			# mflr r0 / mtlr r0 / nop (ori 0,0,0)
+			if insn in (0x7c0802a6, 0x7c0803a6, 0x60000000):
+				continue
+			# bl X
+			if (hi >> 8) == 0x4b:
+				continue
+			# stw r0,X(r1) / std r0,X(r1) / lwz r0,X(r1) / ld r0,X(r1)
+			if hi in (0x9001, 0xf801, 0xe801, 0x8001):
+				continue
+			# stwu r1,X(r1) / stdu r1,X(r1)
+			if hi in (0x9421, 0xf821):
+				r1_dec = 0x10000 - (insn & 0xffff) + 1
+				continue
+			# addi r1,r1,X (after stwu/stdu)
+			if hi == 0x3821 and r1_dec is not None:
+				r1_inc = insn & 0xffff
+				continue
+
+			if len(insns) > 2:
+				return None
+
+			insns.append(insn)
+
+		# Stack pointer decrement/increment must match
+		if (r1_dec is not None or r1_inc is not None) and r1_dec != r1_inc:
+			return None
+
+		# li r3,-ENOSYS; blr
+		if insns == [0x3860ffda, 0x4e800020]:
+			return code
+
+		return None
 
 	def adjust_syscall_number(self, number: int) -> int:
 		if self.bits32 or self.kernel_version >= (5,0):
@@ -242,5 +348,5 @@ class ArchPowerPC(Arch):
 			return None
 
 		if syscall_name is not None:
-			return rf'^PPC32_SYSCALL_DEFINE\d\({syscall_name}'
+			return rf'\bPPC32_SYSCALL_DEFINE\d\({syscall_name}'
 		return r'\bPPC32_SYSCALL_DEFINE\d\s*\('
