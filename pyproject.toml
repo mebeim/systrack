@@ -53,3 +53,9 @@ packages = ['src/systrack']
 
 [tool.hatch.build.targets.sdist]
 include = ['src', 'CHANGELOG.md']
+
+[tool.hatch.envs.default]
+python = '3'
+
+[tool.hatch.envs.test]
+dependencies = ['pytest']
