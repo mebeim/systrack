@@ -265,9 +265,13 @@ class ArchPowerPC(Arch):
 			# stw r0,X(r1) / std r0,X(r1) / lwz r0,X(r1) / ld r0,X(r1)
 			if hi in (0x9001, 0xf801, 0xe801, 0x8001):
 				continue
-			# stwu r1,X(r1) / stdu r1,X(r1)
+			# stdu r1,X(r1)
+			if insn & 0xffff0003 == 0xf8210001:
+				r1_dec = 0x10000 - (insn & 0xfffc)
+				continue
+			# stwu r1,X(r1)
 			if hi in (0x9421, 0xf821):
-				r1_dec = 0x10000 - (insn & 0xffff) + 1
+				r1_dec = 0x10000 - (insn & 0xffff)
 				continue
 			# addi r1,r1,X (after stwu/stdu)
 			if hi == 0x3821 and r1_dec is not None:
