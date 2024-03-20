@@ -1,6 +1,6 @@
 from systrack.arch import ArchPowerPC
 
-from .util import *
+from .utils import *
 
 def test_dummy_syscall_64():
 	assert arch_is_dummy_syscall(ArchPowerPC((5,0), 'ppc64', False),
