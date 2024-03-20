@@ -11,7 +11,10 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  test-before-publish:
+    uses: ./.github/workflows/test.yml
   publish:
+    needs: [test-before-publish]
     runs-on: ubuntu-latest
     environment:
       name: hatch
