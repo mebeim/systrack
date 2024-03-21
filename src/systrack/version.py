@@ -1,4 +1,4 @@
-VERSION = '0.4-rc2'
+VERSION = '0.4-rc3'
 VERSION_COPY = f'''\
 Copyright (C) 2023-2024 Marco Bonelli
 Licensed under the GNU General Public License v3.0
