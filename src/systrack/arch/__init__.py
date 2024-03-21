@@ -90,8 +90,6 @@ Supported architectures and ABIs (values are case-insensitive):
         Unit). The ABI is really PPC64, but SPUs can only use a subset of syscalls.
 '''
 
-#    powerpc        ppc, ppc32      PowerPC  32-bit  32-bit PPC32    ??? TODO
-
 def arch_from_name(name: str, kernel_version: KernelVersion) -> Arch:
 	'''Instantiate and return the right Arch subclass given a human-friendly
 	name (--arch). The name should be already validated.

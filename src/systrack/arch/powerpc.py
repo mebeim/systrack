@@ -278,24 +278,27 @@ class ArchPowerPC(Arch):
 	def extract_esoteric_syscalls(self, vmlinux: ELF) -> EsotericSyscall:
 		# The switch_endian syscall has a "fast" version implemented with a
 		# branch at syscall entry point (arch/powerpc/kernel/exceptions-64s.S).
+		#
 		# The symbol to look at is exc_real_0xc00_system_call, where we should
-		# find something like this:
+		# find `cmpdi r0,0x1ebe` followed by a `beq-` to code that updates the
+		# saved LE bit in SRR1. The same code has been there since at least
+		# v2.6.31.
 		#
-		#   c000000000000c2c:    2c 20 1e be    cmpdi   r0,0x1ebe
-		#   c000000000000c30:    41 c2 00 28    beq-    c000000000000c58
+		#   2c 20 1e be     cmpdi    r0,7870
+		#   41 c2 00 20     beq      X
 		#   ...
-		#   c000000000000c58:    7d 9b 02 a6    mfsrr1  r12
-		#   c000000000000c5c:    69 8c 00 01    xori    r12,r12,1
-		#   c000000000000c60:    7d 9b 03 a6    mtsrr1  r12
-		#   ...
-		#
-		# This code has been there since at least v2.6.31. We should be able to
-		# detect it by just looking for `cmpdi r0,0x1ebe` followed by a `beq-`.
+		#   7d 9b 02 a6  X: mfsrr1   r12
+		#   69 8c 00 01     xori     r12,r12,1
+		#   7d 9b 03 a6     mtsrr1   r12
+		#   4c 00 00 24     rfid
 		#
 		# This "fast" implementation depends on PPC_FAST_ENDIAN_SWITCH from
-		# v4.15 onwards. On older kernels (< v5.0) the associated syscall entry
-		# symbol name may be different, but we don't really care for now. It
-		# should not be available for 32-bit (compat or not) nor 64-bit SPU.
+		# v4.15 onwards. Old kernels only had this fast version and no
+		# switch_endian syscall in the syscall table, which was added in v4.1
+		# (529d235a0e190ded1d21ccc80a73e625ebcad09b).
+		#
+		# FIXME: on older kernels (< v5.0) the associated syscall entry symbol
+		# may be different.
 		#
 		if self.abi != 'ppc64':
 			return []
@@ -312,11 +315,28 @@ class ArchPowerPC(Arch):
 		insns    = iter_unpack('<>'[vmlinux.big_endian] + 'L', code)
 		insns    = list(map(itemgetter(0), insns))
 
-		if 0x2c201ebe in insns: # cmpdi r0,0x1ebe
-			insns = insns[insns.index(0x2c201ebe):]
+		try:
+			idx_cmpdi = insns.index(0x2c201ebe)
+			beq = insns[idx_cmpdi + 1]
+		except (IndexError, ValueError):
+			return []
 
-			if len(insns) < 2 or (insns[1] & 0xffff0000) != 0x41c20000: # beq- xxx
-				return []
+		idx_mfsrr1 = idx_cmpdi + 1	 + (beq & 0xffff) // 4
+		if idx_mfsrr1 >= len(insns) or insns[idx_mfsrr1] != 0x7d9b02a6:
+			return []
+
+		# Match the branch after the cmpdi. Technically it should be a `beq-`
+		# (beq with not taken branch prediction), but also accept others.
+		#                      beq-    beq+    beq     beq
+		if (beq >> 16) not in (0x41c2, 0x41e2, 0x4182, 0x41a2):
+			return []
+
+		try:
+			idx_xori   = insns.index(0x698c0001, idx_mfsrr1 + 1)
+			idx_mtsrr1 = insns.index(0x7d9b03a6, idx_xori + 1)
+			insns.index(0x4c000024, idx_mtsrr1 + 1)
+		except ValueError:
+			return []
 
 		# We have the syscall
 		kconf = 'PPC_FAST_ENDIAN_SWITCH' if self.kernel_version >= (4,15) else None

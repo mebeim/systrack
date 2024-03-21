@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Union
 
 from systrack.arch import Arch
 from systrack.kernel import Syscall
@@ -8,12 +8,30 @@ class MockELF:
 	'''Mock ELF class to be used in place of the ELF class provided by Systrack
 	for testing.
 	'''
-	def __init__(self, big_endian: bool, symbols: Dict[Symbol,bytes]):
+	def __init__(self, big_endian: bool, symbols_with_code: Dict[Symbol,bytes]):
 		self.big_endian = big_endian
-		self.symbols = symbols
+		self.symbols_code = symbols_with_code
+		self.symbols = {}
 
-	def read_symbol(self, sym: Symbol):
-		return self.symbols[sym]
+		for sym in symbols_with_code:
+			self.symbols[sym.name] = sym
+
+	def next_symbol(self, sym: Symbol) -> Union[Symbol,None]:
+		return None
+
+	def vaddr_read(self, vaddr: int, size: int) -> bytes:
+		for sym in self.symbols_code:
+			if sym.real_vaddr == vaddr:
+				code = self.symbols_code[sym]
+				return code.ljust(size, b'\x00')
+
+		assert False, f'Bad call to mocked ELF.vaddr_read()'
+
+	def read_symbol(self, sym: Union[str,Symbol]) -> bytes:
+		if not isinstance(sym, Symbol):
+			sym = self.symbols[sym]
+
+		return self.vaddr_read(sym.real_vaddr, sym.size)
 
 def arch_is_dummy_syscall(arch: Arch, code: bytes):
 	sym = Symbol(0x0, 0x0, len(code), 'FUNC', 'test')
