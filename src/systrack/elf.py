@@ -3,6 +3,7 @@ import re
 import sys
 
 from enum import IntEnum
+from functools import lru_cache
 from pathlib import Path
 from struct import unpack
 from operator import attrgetter
@@ -171,9 +172,12 @@ class ELF:
 
 		return self.vaddr_read(sym.real_vaddr, sym.size)
 
+	@lru_cache(maxsize=128)
 	def next_symbol(self, sym: Symbol) -> Optional[Symbol]:
-		'''Find and return the first symbol whose .vaddr is higher than sym.'''
-		candidates = filter(lambda s: s.vaddr > sym.vaddr, self.symbols.values())
+		'''Find and return the symbol (if any) with the lowest real virtual
+		address higher than the one of sym.
+		'''
+		candidates = filter(lambda s: s.real_vaddr > sym.real_vaddr, self.symbols.values())
 
 		try:
 			return min(candidates, key=attrgetter('vaddr'))
