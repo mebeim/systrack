@@ -165,8 +165,7 @@ class ArchPowerPC(Arch):
 		return ArchPowerPC, vmlinux.bits32, abis
 
 	def matches(self, vmlinux: ELF) -> bool:
-		# Linux PPC 32-bit should be big-endian only, and  _dummy_syscall_code()
-		# below also relies on this
+		# Linux PPC 32-bit should be big-endian only
 		assert vmlinux.big_endian, 'Little-endian PowerPC 32-bit kernel? WAT'
 		return (
 			vmlinux.e_machine == (E_MACHINE.EM_PPC64, E_MACHINE.EM_PPC)[self.bits32]

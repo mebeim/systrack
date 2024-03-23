@@ -35,7 +35,7 @@ def output_syscalls_text(syscalls: Iterable[Syscall], spacing: int = 2):
 
 	for sc in syscalls:
 		if sc.number - prevnum > 1:
-			# Blank line to separate groups of congiguous syscall numbers
+			# Blank line to separate groups of contiguous syscall numbers
 			table.append(None)
 
 		prevnum = sc.number

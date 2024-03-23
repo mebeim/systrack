@@ -90,13 +90,12 @@ def syscall_signature_from_source(file: Path, line: int, big_endian: bool) -> Tu
 	return sig
 
 def extract_syscall_signatures(syscalls: List[Syscall], vmlinux: ELF, have_source: bool):
-	res = []
-	meta = {}
 	have_syscall_metadata = '__start_syscalls_metadata' in vmlinux.symbols
-	all_from_ftrace = False
+	meta = {}
+	res = []
 
-	# TODO: we could also extract signatures from DWARF or BTF even if we have
-	# no ftrace metadata and no KDIR. How?
+	# TODO: could we also extract signatures from DWARF or BTF even if we have
+	# no ftrace metadata and no KDIR? How?
 
 	# First extract signatures from ftrace metadata. If the kernel was compiled
 	# with CONFIG_FTRACE_SYSCALLS=y we have signature information available in a
@@ -110,7 +109,6 @@ def extract_syscall_signatures(syscalls: List[Syscall], vmlinux: ELF, have_sourc
 		meta_fmt = '<>'[vmlinux.big_endian] + ('QllQQ', 'LllLL')[vmlinux.bits32]
 		ptr_sz   = 4 if vmlinux.bits32 else 8
 		meta_sz  = 8 + 3 * ptr_sz
-		endian   = 'big' if vmlinux.big_endian else 'little'
 		ptrs     = map(itemgetter(0), iter_unpack(ptr_fmt, vmlinux.vaddr_read(start, stop - start)))
 
 		# Sanity check
@@ -160,7 +158,7 @@ def extract_syscall_signatures(syscalls: List[Syscall], vmlinux: ELF, have_sourc
 			sc.signature = sig
 			logging.debug('Signature extracted from ftrace metadata: %s', sc.name)
 		else:
-			# Weird/bad location, no FTRACE_SYSCALLS metadata :(
+			# Weird/bad location and no FTRACE_SYSCALLS metadata :(
 			if sc.file is not None and sc.line is not None:
 				logging.debug('Signature extraction skipped: %s at %s:%d',
 					sc.name, sc.file, sc.line)
