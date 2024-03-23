@@ -158,9 +158,7 @@ def extract_syscall_signatures(syscalls: List[Syscall], vmlinux: ELF, have_sourc
 					continue
 
 			sc.signature = sig
-
-			if not have_source:
-				logging.debug('Signature extracted from ftrace metadata: %s', sc.name)
+			logging.debug('Signature extracted from ftrace metadata: %s', sc.name)
 		else:
 			# Weird/bad location, no FTRACE_SYSCALLS metadata :(
 			if sc.file is not None and sc.line is not None:
