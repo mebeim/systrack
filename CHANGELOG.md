@@ -1,6 +1,38 @@
 Systrack changelog
 ==================
 
+v0.4
+----
+
+New arch support: PowerPC 32-bit, tested on v5.0+ kernels.
+
+**Improvements**:
+
+- Improve kconfig dependency checking logic for better warning/error messages.
+- PowerPC PPC64: improve esoteric fast switch_endian syscall detection.
+- Better (narrower) emoji spacing in HTML output.
+
+**Bug fixes**:
+
+- Correctly report `delete_module` depending on `CONFIG_MODULE_UNLOAD=y`.
+- Fix incorrectly handled shared syscall table in x86-64 x32 ABI resulting in
+  duplicated and unwanted entries in the output for kernels older than v5.4.
+- Fix chance of building kernels without `memfd_create`, `memfd_secret`,
+  `delete_module` (and possibly others) by always enabling `MEMFD_CREATE`,
+  `MODULE_UNLOAD`, `NET` and `SECRETMEM` when available.
+- Fix wrong handling of relative `--kdir` path (e.g., `.`) in some cases.
+- Fix missed detection of non-implemented syscalls pointing to `kernel/sys_ni.c`
+  when DWARF debug info contains relative paths.
+- x86 x32: fix some x64 syscalls reported twice because both the x64 number and
+  the historycally misnumbered x32 numbers (512-547) were being considered
+  valid.
+
+**Internal changes**:
+
+- Ignore `sound/` and `user/` dirs to speed up grepping syscall definitions.
+- Implement some basic unit tests for powerpc dummy/esoteric syscall detection.
+
+
 v0.3.3
 ------
 
@@ -8,6 +40,7 @@ v0.3.3
 
 - Correctly report `lsm_{list_modules,get_self_attr,set_self_attr}` depending on
   `CONFIG_SECURITY=y`.
+
 
 v0.3.2
 ------
@@ -17,6 +50,7 @@ v0.3.2
 - Correctly report `futex_{wait,wake,requeue}` depending on `CONFIG_FUTEX=y`.
 - Use unicorn emoji (cuter) instead of test tube for esoteric syscalls in HTML
   output.
+
 
 v0.3.1
 ------
@@ -36,6 +70,7 @@ v0.3.1
 
 - Sort stderr logs for reproducible output and easier diffing.
 - Skip `lib/` directory in kernel sources to improve grepping performance.
+
 
 v0.3
 ----
@@ -72,6 +107,7 @@ New arch support: PowerPC 64-bit, all ABIs, tested on v5.0+ kernels.
 - Handle SIGINT for more graceful termination.
 - Auto-remap definition locations relative to KDIR for ease of use.
 
+
 v0.2.1
 ------
 
@@ -85,6 +121,7 @@ v0.2.1
 
 - x86: correct wrong syscall numbers for x32 ABI, they should all be ORed with
   `0x40000000` (`__X32_SYSCALL_BIT`).
+
 
 v0.2
 ----
@@ -102,6 +139,7 @@ v0.2
 - Fix a logging bug that caused not loging syscalls' `.origname` for not-found
   locations after grepping.
 - x86: use the right Kconfig option for vm86 and vm86old
+
 
 v0.1
 ----
