@@ -68,16 +68,23 @@ def syscall_signature_from_source(file: Path, line: int, big_endian: bool) -> Tu
 			assert nargs == 0, f'Expected {nargs} arguments, but found 0: {file}:{line}'
 			return () # no arguments
 
-		sig = sig[start:sig.rfind(')')].replace(' __user', '')
+		sig = sig[start:sig.rfind(')')]
+		# Remove __user annotation, collapse multiple spaces into one and remove
+		# spaces between double pointers
+		sig = ' '.join(sig.replace(' __user', '').split()).replace('* *', '**')
 		sig = parse_signature(sig, big_endian)
 
 		assert len(sig) % 2 == 0 and len(sig) // 2 == nargs, f'Bad signature after parsing: {file}:{line}'
 		sig = tuple(f'{t}{" " * (t[-1] != "*")}{n}' for t, n in zip(sig[::2], sig[1::2]))
 	elif sig.startswith('asmlinkage'):
 		start = sig.find('(') + 1
-		sig = sig[start:sig.rfind(')')].replace(' __user', '').strip()
+		sig = sig[start:sig.rfind(')')].strip()
 		if not sig or sig == 'void':
 			return () # no arguments
+
+		# Remove __user annotation, collapse multiple spaces into one and remove
+		# spaces between asterisks of pointers
+		sig = ' '.join(sig.replace(' __user', '').split()).replace('* *', '**')
 
 		# We are assuming macros like arg_u32p are only used for SYSCALL_DEFINEx
 		assert '(' not in sig and ')' not in sig, f'Unexpected parentheses in signature: {file}:{line}'
@@ -131,6 +138,8 @@ def extract_syscall_signatures(syscalls: List[Syscall], vmlinux: ELF, have_sourc
 				arg = unpack(ptr_fmt, vmlinux.vaddr_read(args + i * ptr_sz, ptr_sz))[0]
 				typ = vmlinux.vaddr_read_string(typ).strip()
 				arg = vmlinux.vaddr_read_string(arg).strip()
+				# Double pointers can have spaces between asterisks
+				typ = typ.replace('* *', '**')
 				sig.append(f'{typ}{" " * (typ[-1] != "*")}{arg}')
 
 			meta[name] = tuple(sig)
