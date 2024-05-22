@@ -1,6 +1,6 @@
 from systrack.arch import ArchPowerPC
 
-from .utils import *
+from .utils import MockELF, Symbol, arch_is_dummy_syscall
 
 
 def test_dummy_syscall_simple():

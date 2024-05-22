@@ -25,7 +25,7 @@ class MockELF:
 				code = self.symbols_code[sym]
 				return code.ljust(size, b'\x00')
 
-		assert False, f'Bad call to mocked ELF.vaddr_read()'
+		assert False, 'Bad call to mocked ELF.vaddr_read()'
 
 	def read_symbol(self, sym: Union[str,Symbol]) -> bytes:
 		if not isinstance(sym, Symbol):

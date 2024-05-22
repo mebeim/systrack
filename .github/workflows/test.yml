@@ -24,4 +24,4 @@ jobs:
       - name: Install test dependencies
         run: python3 -m pip install --upgrade build hatch pytest
       - name: Run tests
-        run: hatch run test:pytest
+        run: hatch test
