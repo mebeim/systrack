@@ -42,14 +42,6 @@ Systrack can mainly be used for two purposes: analyzing or building Linux
 kernels. For more detailed information, see `systrack --help`. For information
 about supported architecture/ABI combinations, see `systrack --arch help`.
 
-- **Building** can be done through the `--build` option. You will need to
-  provide a kernel source directory (`--kdir`) and an architecture/ABI
-  combination to build for (`--arch`).
-
-  ```none
-  systrack --build --kdir path/to/linux_git_repo --arch x86-64
-  ```
-
 - **Analyzing** a kernel image can be done given a `vmlinux` ELF with symbols,
   and optionally also a kernel source directory (`--kdir`). Systrack will
   extract information about implemented syscalls from the symbol table present
@@ -66,8 +58,25 @@ about supported architecture/ABI combinations, see `systrack --arch help`.
   ```none
   systrack path/to/vmlinux
   systrack --format json path/to/vmlinux
+  systrack --format html path/to/vmlinux
   systrack --kdir path/to/linux_git_repo path/to/vmlinux
   systrack --kdir path/to/linux_git_repo --arch x86-64-ia32 path/to/vmlinux
+  ```
+
+- **Building** can be done through the `--build` option. You will need to
+  provide a kernel source directory (`--kdir`) and an architecture/ABI
+  combination to build for (`--arch`).
+
+  ```none
+  systrack --build --kdir path/to/linux_git_repo --arch x86-64
+  ```
+
+  Cross-compilation is possible specifying the correct toolchain prefix with
+  the `--cross` option, which will set the `CROSS_COMPILE` variable for the
+  kernel's `Makefile`.
+
+  ```none
+  systrack --build --kdir path/to/linux_git_repo --arch arm64 --cross aarch64-linux-gnu-
   ```
 
 Runtime dependencies
@@ -102,7 +111,7 @@ Limitations
   *somewhat* work on older kernels, but without the same level of guarantee on
   the correctness of the output. Support for old kernels may come gradually in
   the future.
-- Relocatable kernel support: Systrack does not currently parse and apply ELF
+- Relocatable kernels: Systrack does not currently parse and apply ELF
   relocations. This means that Systrack does not support kernels using
   relocation entries for the syscall table. On some architectures (notably MIPS)
   if the kernel is relocatable the syscall table is relocated at startup and
