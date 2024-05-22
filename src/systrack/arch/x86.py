@@ -338,7 +338,7 @@ class ArchX86(Arch):
 
 		return None
 
-	def __emulate_syscall_switch(self, func: Symbol, func_code: bytes) -> Optional[Tuple[DefaultDict[int,Set[int]],Set[Instruction],DefaultDict[Instruction,int]]]:
+	def __emulate_syscall_switch(self, func: Symbol, func_code: bytes) -> Optional[Tuple[DefaultDict[int,Set[int]],Set[Instruction]]]:
 		start = func.real_vaddr
 		end   = func.real_vaddr + func.size
 		insns = list(Decoder(32 if self.bits32 else 64, func_code, ip=start))
@@ -369,7 +369,7 @@ class ArchX86(Arch):
 		nrs: DefaultDict[int,Set[int]] = defaultdict(set, {start: set(range(nr_max))})
 		# Candidate branches to syscall functions
 		candidate_insns: Set[Instruction] = set()
-		# Accumulate non-NOP skipped insns for debugging purposes
+		# Accumulate non-NOP skipped insns for logging/debugging purposes
 		skipped_insns: DefaultDict[Instruction,int] = defaultdict(int)
 
 		keep_going = True
@@ -492,14 +492,14 @@ class ArchX86(Arch):
 				if start <= target_ip < end:
 					# Branch target inside function
 					if target_ip < ip:
-						# Backward branch, new numbers may be added to the
+						# Backward branch: new numbers may be added to the
 						# target instruction, but we are already past it. In
 						# such case, we'll need an additional iteration to
 						# propagate the information.
 						if not new_taken_nrs.issubset(nrs[target_ip]):
 							keep_going = True
 				else:
-					# Branch target outsize function, assume it's a branch to a
+					# Branch target outside function, assume it's a branch to a
 					# syscall function
 					candidate_insns.add(insn)
 
@@ -509,7 +509,14 @@ class ArchX86(Arch):
 		logging.info('Symbolic emulation done in %d iteration%s', iteration,
 			's'[:iteration ^ 1])
 
-		return nrs, candidate_insns, skipped_insns
+		if skipped_insns:
+			n_skipped = sum(skipped_insns.values())
+			skipped = sorted(skipped_insns.items(), key=itemgetter(1, 0), reverse=True)
+			skipped = '; '.join((f'{i:r} (x{n})' for i, n in skipped))
+			logging.debug('Skipped %d instruction%s: %s', n_skipped,
+				's'[:n_skipped ^ 1], skipped)
+
+		return nrs, candidate_insns
 
 	def extract_syscall_vaddrs(self, vmlinux: ELF) -> Dict[int,int]:
 		# We need to go through a painful examination of the switch statement
@@ -541,22 +548,14 @@ class ArchX86(Arch):
 			logging.error('%s is too small (%d bytes)', sym.name, sym.size)
 			return {}
 
-		logging.info('Recovering syscalls from code of %s() at %#x', sym.name,
+		logging.info('Extracting syscalls from code of %s() at %#x', sym.name,
 			sym.real_vaddr)
 
 		res = self.__emulate_syscall_switch(sym, vmlinux.read_symbol(sym))
 		if res is None:
 			return {}
 
-		nrs, candidate_insns, skipped_insns = res
-
-		if skipped_insns:
-			n_skipped = sum(skipped_insns.values())
-			skipped = sorted(skipped_insns.items(), key=itemgetter(1, 0), reverse=True)
-			skipped = '; '.join((f'{i:r} (x{n})' for i, n in skipped))
-			logging.debug('Skipped %d instruction%s: %s', n_skipped,
-				's'[:n_skipped ^ 1], skipped)
-
+		nrs, candidate_insns = res
 		vaddrs: Dict[int,int] = {}
 		found_default_case = False
 
@@ -568,12 +567,11 @@ class ArchX86(Arch):
 
 			if len(numbers) == 0:
 				# This should never happen, bail out
-				logging.error('Empty set of syscall numbers for %#x. '
-					'Unreachable???', vaddr)
+				logging.error('Empty set of syscall numbers for %#x (target of '
+					'%r). Unreachable!?', vaddr, insn)
 				return {}
 
 			if len(numbers) > 100:
-				# This is definitely the default switch case
 				logging.debug('Default switch case at %#x (reachable %d '
 					'times): %r => %#x is ni_syscall', insn.ip,
 					len(numbers), insn, vaddr)
