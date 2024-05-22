@@ -33,7 +33,7 @@ dependencies = [
 [project.urls]
 Homepage = 'https://github.com/mebeim/systrack'
 Repository = 'https://github.com/mebeim/systrack.git'
-Changelog = 'https://github.com/mebeim/systrack.git/blob/master/CHANGELOG.md'
+Changelog = 'https://github.com/mebeim/systrack/blob/master/CHANGELOG.md'
 
 [project.scripts]
 systrack = 'systrack.__main__:main'
