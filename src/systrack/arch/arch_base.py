@@ -149,7 +149,11 @@ class Arch(ABC):
 		return (
 			sym.type == 'FUNC'
 			and anysuffix(sym.name, 'sys_ni_syscall', 'compat_ni_syscall')
+			# Avoid ftrace-related symbols
 			and not sym.name.startswith('_eil_addr_')
+			# Avoid KCFI-related symbols
+			and not sym.name.startswith('__cfi_')
+			and not sym.name.startswith('__pfx_')
 		)
 
 	def skip_syscall(self, sc: Syscall) -> bool:
