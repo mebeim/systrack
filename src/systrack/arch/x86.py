@@ -1,4 +1,11 @@
-from typing import Tuple, List, Type, Optional
+import logging
+from collections import defaultdict
+from operator import itemgetter
+from typing import Tuple, List, Dict, DefaultDict, Set, Type, Optional
+
+from iced_x86 import Decoder, Instruction
+from iced_x86.Mnemonic import Mnemonic, RET, CMP, TEST, JA, JAE, JB, JBE, JE, JNE
+from iced_x86.OpKind import REGISTER
 
 from ..elf import Symbol, ELF, E_MACHINE
 from ..kconfig_options import VERSION_ZERO, VERSION_INF
@@ -58,6 +65,21 @@ class ArchX86(Arch):
 		# self.name should reflect that too too.
 		assert self.kernel_version >= (2,6,24), 'kernel too old, sorry!'
 
+		# Syscall tables are no longer guaranteed to exists since v6.9
+		# (see commit 1e3ad78334a69b36e107232e337f9d693dcc9df2). We will
+		# determine later in adjust_abi() if we actually have a table for the
+		# selected ABI (in case of FTRACE_SYSCALLS=y we may have one).
+		if self.kernel_version < (6,9):
+			self.syscall_table_name = 'sys_call_table'
+
+			if not self.bits32:
+				if self.abi == 'ia32':
+					self.syscall_table_name = 'ia32_sys_call_table'
+				elif self.abi == 'x32' and self.kernel_version >= (5,4):
+					self.syscall_table_name = 'x32_sys_call_table'
+		else:
+			self.syscall_table_name = None
+
 		if self.abi == 'ia32':
 			self.syscall_num_reg  = 'eax'
 			self.syscall_arg_regs = ('ebx', 'ecx', 'edx', 'esi', 'edi', 'ebp')
@@ -92,13 +114,9 @@ class ArchX86(Arch):
 			self.compat           = self.abi != 'x64'
 			self.config_target    = 'x86_64_defconfig'
 
-			if self.abi == 'ia32':
-				self.syscall_table_name = 'ia32_sys_call_table'
-			elif self.abi == 'x32':
+			if self.abi == 'x32':
 				# x32 syscalls have this bit set (__X32_SYSCALL_BIT)
 				self.syscall_num_base = 0x40000000
-				if self.kernel_version >= (5,4):
-					self.syscall_table_name = 'x32_sys_call_table'
 
 			# x86-64 supports all ABIs: ia32, x64, x32. Enable all of them, we
 			# will be able to extract the right syscall table regardless.
@@ -138,9 +156,17 @@ class ArchX86(Arch):
 
 			if 'ia32_sys_call_table' in vmlinux.symbols:
 				abis.append('ia32')
-			if 'x32_sys_call_table' in vmlinux.symbols or any('x32_compat_sys' in s for s in vmlinux.symbols):
-				# The `any` check is needed since before v5.4 x32 syscalls did
-				# NOT have their own table.
+			elif 'ia32_sys_call' in vmlinux.symbols:
+				# Since v6.9 no more tables, but we have this function instead
+				abis.append('ia32')
+
+			if 'x32_sys_call_table' in vmlinux.symbols:
+				abis.append('x32')
+			elif 'x32_sys_call' in vmlinux.symbols:
+				# Since v6.9 no more tables, but we have this function instead
+				abis.append('x32')
+			elif any('x32_compat_sys' in s for s in vmlinux.symbols):
+				# Before v5.4 x32 did NOT have its own table
 				abis.append('x32')
 
 		return ArchX86, vmlinux.bits32, abis
@@ -151,31 +177,41 @@ class ArchX86(Arch):
 			and vmlinux.bits32 == self.bits32
 		)
 
-	__is_ia32 = staticmethod(lambda n: n.startswith('__ia32_')) # __ia32_[compat_]sys_xxx
-	__is_x64  = staticmethod(lambda n: n.startswith('__x64_'))  # __x64_[compat_]sys_xxx
-	__is_x32  = staticmethod(lambda n: n.startswith('__x32_'))  # __x32_compat_sys_xxx
+	def adjust_abi(self, vmlinux: ELF):
+		if self.kernel_version < (6,9):
+			return
+
+		# Figure out if we have a syscall table (FTRACE_SYSCALLS=y) or not. The
+		# sys_call_table symbol represents the x64 table for 64-bit and the ia32
+		# table for 32-bit. There is no ia32 nor x32 table for 64-bit kernels.
+		if 'sys_call_table' in vmlinux.symbols and not self.compat:
+			self.syscall_table_name = 'sys_call_table'
+
+	__is_ia32_name = staticmethod(lambda n: n.startswith('__ia32_')) # __ia32_[compat_]sys_xxx
+	__is_x64_name  = staticmethod(lambda n: n.startswith('__x64_'))  # __x64_[compat_]sys_xxx
+	__is_x32_name  = staticmethod(lambda n: n.startswith('__x32_'))  # __x32_compat_sys_xxx
 
 	def preferred_symbol(self, a: Symbol, b: Symbol) -> Symbol:
 		# Try preferring the symbol with the right ABI in its prefix.
 		na, nb = a.name, b.name
 
 		if self.abi == 'ia32':
-			if self.__is_ia32(na): return a
-			if self.__is_ia32(nb): return b
-			if self.__is_x64(na): return a
-			if self.__is_x64(nb): return b
+			if self.__is_ia32_name(na): return a
+			if self.__is_ia32_name(nb): return b
+			if self.__is_x64_name(na): return a
+			if self.__is_x64_name(nb): return b
 			if not na.islower(): return b
 			if not nb.islower(): return a
 			return super().preferred_symbol(a, b)
 
 		if self.abi == 'x32':
-			if self.__is_x32(na): return a
-			if self.__is_x32(nb): return b
+			if self.__is_x32_name(na): return a
+			if self.__is_x32_name(nb): return b
 
-		if self.__is_x64(na): return a
-		if self.__is_x64(nb): return b
-		if self.__is_ia32(na): return b
-		if self.__is_ia32(nb): return a
+		if self.__is_x64_name(na): return a
+		if self.__is_x64_name(nb): return b
+		if self.__is_ia32_name(na): return b
+		if self.__is_ia32_name(nb): return a
 		if not na.islower(): return b
 		if not nb.islower(): return a
 		return super().preferred_symbol(a, b)
@@ -301,3 +337,264 @@ class ArchX86(Arch):
 			if sz == 12 and code[7] == 0xe9: return orig # jmp rel32
 
 		return None
+
+	def __emulate_syscall_switch(self, func: Symbol, func_code: bytes) -> Optional[Tuple[DefaultDict[int,Set[int]],Set[Instruction],DefaultDict[Instruction,int]]]:
+		start = func.real_vaddr
+		end   = func.real_vaddr + func.size
+		insns = list(Decoder(32 if self.bits32 else 64, func_code, ip=start))
+
+		# Register used to hold syscall number
+		nr_reg = None
+
+		# Assume first compared register holds syscall number
+		for insn in insns:
+			if insn.op_code().mnemonic in (CMP, TEST):
+				for i in range(insn.op_count):
+					if insn.op_kind(i) == REGISTER:
+						nr_reg = insn.op_register(i)
+						break
+
+				if nr_reg is not None:
+					break
+
+		if nr_reg is None:
+			logging.error('Could not find syscall number register')
+			return None
+
+		# Supported Jcc instructions
+		jccs = {JA, JAE, JB, JBE, JE, JNE}
+		# Maximum syscall number supported plus 1
+		nr_max = 0x1000
+		# Possible syscall numbers at a given address (instruction pointer)
+		nrs: DefaultDict[int,Set[int]] = defaultdict(set, {start: set(range(nr_max))})
+		# Candidate branches to syscall functions
+		candidate_insns: Set[Instruction] = set()
+		# Accumulate non-NOP skipped insns for debugging purposes
+		skipped_insns: DefaultDict[Instruction,int] = defaultdict(int)
+
+		keep_going = True
+		iteration = 0
+
+		# Symbolically trace the function code to determine the possible syscall
+		# numbers and the instructions that lead to them
+		while keep_going:
+			iteration += 1
+			keep_going = False
+
+			invert_condition = False
+			mnemonic: Optional[Mnemonic] = None
+			last_cmp_immediate: Optional[int] = None
+
+			for insn in insns:
+				ip            = insn.ip
+				next_ip       = insn.next_ip
+				prev_mnemonic = mnemonic
+				mnemonic      = insn.op_code().mnemonic
+				cur_nrs       = nrs[ip]
+
+				# Only support a TEST that appears right before JE/JNE, which is
+				# functionally to a CMP with 0.
+				if prev_mnemonic == TEST and mnemonic not in (JE, JNE):
+					logging.error('Unsupported instruction after TEST: %#x: %r', ip, insn)
+					return None
+
+				if mnemonic == RET:
+					continue
+
+				if mnemonic == TEST:
+					if insn.op0_kind != REGISTER or insn.op1_kind != REGISTER:
+						logging.error('Unsupported TEST instruction %#x: %r', ip, insn)
+						return None
+
+					# Treat `TEST reg, reg` as `CMP reg, 0`. We make sure that this
+					# is the only possible case above.
+					last_cmp_immediate = 0
+					nrs[next_ip] |= cur_nrs
+					continue
+
+				if mnemonic == CMP:
+					if insn.op0_kind == REGISTER:
+						reg = insn.op0_register
+						imm_op_idx = 1
+						invert_condition = False
+					elif insn.op1_kind == REGISTER:
+						reg = insn.op1_register
+						imm_op_idx = 0
+						invert_condition = True
+					else:
+						# Should not happen, but guard against it anyway.
+						imm_op_idx = None
+
+					try:
+						last_cmp_immediate = insn.immediate(imm_op_idx)
+					except (ValueError, TypeError):
+						logging.error('Unsupported CMP instruction %#x: %r', ip, insn)
+						return None
+
+					if reg != nr_reg:
+						logging.error('Unexpected register in CMP instruction '
+							'%#x: %r', ip, insn)
+						return None
+
+					nrs[next_ip] |= cur_nrs
+					continue
+
+				new_taken_nrs = frozenset()
+				new_not_taken_nrs = frozenset()
+
+				if insn.is_jmp_short_or_near:
+					target_ip = insn.near_branch_target
+					new_taken_nrs = cur_nrs
+				elif insn.is_jcc_short_or_near:
+					if mnemonic not in jccs:
+						logging.error('Unsupported Jcc instruction %#x: %r', ip, insn)
+						return None
+					if last_cmp_immediate is None:
+						logging.error('No previous CMP/TEST instruction for Jcc: '
+							'%#x: %r', ip, insn)
+						return None
+
+					target_ip = insn.near_branch_target
+
+					if mnemonic == JA:
+						taken_filter = set(range(last_cmp_immediate + 1, nr_max))
+					elif mnemonic == JAE:
+						taken_filter = set(range(last_cmp_immediate, nr_max))
+					elif mnemonic == JB:
+						taken_filter = set(range(last_cmp_immediate))
+					elif mnemonic == JBE:
+						taken_filter = set(range(last_cmp_immediate + 1))
+					elif mnemonic == JE:
+						taken_filter = {last_cmp_immediate}
+					elif mnemonic == JNE:
+						taken_filter = set(range(0, last_cmp_immediate))
+						taken_filter |= set(range(last_cmp_immediate + 1, nr_max))
+
+					new_taken_nrs = cur_nrs & taken_filter
+					new_not_taken_nrs = cur_nrs - taken_filter
+
+					if invert_condition:
+						new_taken_nrs, new_not_taken_nrs = new_not_taken_nrs, new_taken_nrs
+				elif insn.is_call_near:
+					target_ip = insn.near_branch_target
+					if start <= target_ip < end:
+						logging.error('%s calling itself??? %r', func.name, insn)
+						return None
+				else:
+					if iteration == 1 and not insn.op_code().is_nop:
+						skipped_insns[insn] += 1
+
+					# YOLO
+					nrs[next_ip] |= cur_nrs
+					continue
+
+				# We get here for JMP, Jcc and CALL near
+				if start <= target_ip < end:
+					# Branch target inside function
+					if target_ip < ip:
+						# Backward branch, new numbers may be added to the
+						# target instruction, but we are already past it. In
+						# such case, we'll need an additional iteration to
+						# propagate the information.
+						if not new_taken_nrs.issubset(nrs[target_ip]):
+							keep_going = True
+				else:
+					# Branch target outsize function, assume it's a branch to a
+					# syscall function
+					candidate_insns.add(insn)
+
+				nrs[target_ip] |= new_taken_nrs
+				nrs[next_ip] |= new_not_taken_nrs
+
+		logging.info('Symbolic emulation done in %d iteration%s', iteration,
+			's'[:iteration ^ 1])
+
+		return nrs, candidate_insns, skipped_insns
+
+	def extract_syscall_vaddrs(self, vmlinux: ELF) -> Dict[int,int]:
+		# We need to go through a painful examination of the switch statement
+		# implemented by {x64,x32,ia32}_sys_call():
+		#
+		#    #define __SYSCALL(nr, sym) case nr: return __x64_##sym(regs);
+		#
+		#    long x64_sys_call(const struct pt_regs *regs, unsigned int nr)
+		#    {
+		#        switch (nr) {
+		#        #include <asm/syscalls_64.h>
+		#        default: return __x64_sys_ni_syscall(regs);
+		#        }
+		#    }
+		#
+		# The switch statement on the second argument is implemented as a binary
+		# search. Therefore, the generated instructions should simply be a bunch
+		# of CMP/Jcc/JMP. No other implementation is supported right now.
+		#
+		assert self.syscall_table_name is None
+
+		func_name = f'{self.abi}_sys_call'
+		sym = vmlinux.functions.get(func_name)
+		if sym is None:
+			logging.error('Could not find function %s', func_name)
+			return {}
+
+		if sym.size < 0x10:
+			logging.error('%s is too small (%d bytes)', sym.name, sym.size)
+			return {}
+
+		logging.info('Recovering syscalls from code of %s() at %#x', sym.name,
+			sym.real_vaddr)
+
+		res = self.__emulate_syscall_switch(sym, vmlinux.read_symbol(sym))
+		if res is None:
+			return {}
+
+		nrs, candidate_insns, skipped_insns = res
+
+		if skipped_insns:
+			n_skipped = sum(skipped_insns.values())
+			skipped = sorted(skipped_insns.items(), key=itemgetter(1, 0), reverse=True)
+			skipped = '; '.join((f'{i:r} (x{n})' for i, n in skipped))
+			logging.debug('Skipped %d instruction%s: %s', n_skipped,
+				's'[:n_skipped ^ 1], skipped)
+
+		vaddrs: Dict[int,int] = {}
+		found_default_case = False
+
+		for insn in candidate_insns:
+			# Guaranteed to have .near_branch_target by the code in
+			# __emulate_syscall_switch() above
+			vaddr = insn.near_branch_target
+			numbers = nrs[vaddr]
+
+			if len(numbers) == 0:
+				# This should never happen, bail out
+				logging.error('Empty set of syscall numbers for %#x. '
+					'Unreachable???', vaddr)
+				return {}
+
+			if len(numbers) > 100:
+				# This is definitely the default switch case
+				logging.debug('Default switch case at %#x (reachable %d '
+					'times): %r => %#x is ni_syscall', insn.ip,
+					len(numbers), insn, vaddr)
+
+				if found_default_case:
+					logging.error('Multiple default switch cases?')
+					return {}
+
+				found_default_case = True
+				continue
+
+			# Let the caller handle de-duplication in case a single vaddr can be
+			# reached by multiple syscall numbers
+			for nr in numbers:
+				if nr in vaddrs:
+					if vaddrs[nr] != vaddr:
+						logging.error('Number %d leads to multiple vaddrs: '
+							'%#x %#x. Bailing out!', nr, vaddrs[nr], vaddr)
+						return {}
+					continue
+
+				vaddrs[nr] = vaddr
+
+		return vaddrs

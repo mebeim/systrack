@@ -1,7 +1,7 @@
 import logging
 
 from abc import ABC, abstractmethod
-from typing import Tuple, List, Type, Optional
+from typing import Tuple, List, Dict, Type, Optional
 
 from ..elf import Symbol, ELF
 from ..syscall import Syscall
@@ -36,7 +36,7 @@ class Arch(ABC):
 	config_target: str = 'defconfig'
 
 	# Name of the syscall table symbol to look for
-	syscall_table_name: str = 'sys_call_table'
+	syscall_table_name: Optional[str] = 'sys_call_table'
 
 	# Base syscall number (actual syscall number is base + idx in syscall table)
 	# NOTE: easiest way to check this is to just compile a binary that makes a
@@ -269,6 +269,14 @@ class Arch(ABC):
 		syscall numbers).
 		'''
 		return number
+
+	def extract_syscall_vaddrs(self, vmlinux: ELF) -> Dict[int,int]:
+		'''Extract virtual addresses of syscall functions. Implemented in case
+		this isn't just as simple as looking at the addresses in the syscall
+		table (e.g., there might not be one to begin with).
+		'''
+		logging.error("Sorry, don't know how to extract syscall vaddrs for this arch!")
+		return {}
 
 	def extract_esoteric_syscalls(self, vmlinux: ELF) -> EsotericSyscall:
 		'''Extract weird arch-specific syscalls not in the syscall table: there

@@ -21,20 +21,18 @@ and works best at analyzing kernels that it has configured and built by itself.
 Installation
 ------------
 
-Systrack is [available on PyPI][pypi-systrack], it requires Python 3.6+ and is
+Systrack is [available on PyPI][pypi-systrack], it requires Python 3.8+ and is
 installable through Pip:
 
 ```bash
-pip install systrack        # Base version with no dependencies
-pip install systrack[html]  # + HTML output support
+pip install systrack
 ```
 
 Building and installaing from source requires [`hatch`][pypi-hatch]:
 
 ```bash
 hatch build
-pip install dist/systrack-XXX.whl       # Base version with no dependencies
-pip install dist/systrack-XXX.whl[html] # + HTML output support
+pip install dist/systrack-XXX.whl
 ```
 
 Usage
@@ -75,6 +73,8 @@ about supported architecture/ABI combinations, see `systrack --arch help`.
 Runtime dependencies
 --------------------
 
+External (non-Python) runtime dependencies are:
+
 - **Required**: `readelf` (from GNU binutils) is used to parse and extract ELF
   metadata such as symbols and sections. This is currently the only *compulsory*
   dependency for Systrack to work.
@@ -84,10 +84,6 @@ Runtime dependencies
 - Optional: if available, the `rg` ([ripgrep][ripgrep]) command is used for much
   faster recursive grepping of syscall definition locations within kernel
   sources when needed. Otherwise, slower pure-Python code is used.
-- Optional: the `jinja2` Python package, which can be either installed
-  separately or automatically (`pip install systrack[html]`) is used to output
-  interactive HTML pages with a sortable table, links and more. This is the
-  richest output format (selectable with `--format html`).
 - Optional: a working compiler toolchain and
   [kernel build dependencies](https://www.kernel.org/doc/html/latest/process/changes.html)
   are obviously needed if you want Systrack to *build* kernels from source.

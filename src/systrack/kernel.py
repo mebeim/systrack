@@ -7,7 +7,7 @@ from time import monotonic
 from os import sched_getaffinity
 from operator import itemgetter, attrgetter
 from collections import defaultdict, Counter
-from typing import Tuple, List, Iterator, Union, Any
+from typing import Tuple, List, Dict, Iterator, Union, Any
 
 from .arch import arch_from_name, arch_from_vmlinux
 from .elf import ELF, Symbol, Section
@@ -235,22 +235,12 @@ class Kernel:
 
 		return vaddrs
 
-	def __extract_syscalls(self) -> List[Syscall]:
-		if self.arch.bits32 != self.vmlinux.bits32:
-			a, b = (32, 64) if self.arch.bits32 else (64, 32)
-			logging.critical('Selected arch is %d-bit, but kernel is %d-bit', a, b)
-			return []
-
-		self.arch.adjust_abi(self.vmlinux)
-		logging.debug('Arch: %r', self.arch)
-
-		syscall_table_name = self.arch.syscall_table_name
-		tbl = self.vmlinux.symbols.get(syscall_table_name)
-		ni_syscalls = set()
-
+	def __syscall_vaddrs_from_syscall_table(self) -> Dict[int,int]:
+		tbl = self.vmlinux.symbols.get(self.arch.syscall_table_name)
 		if not tbl:
-			logging.critical('Unable to find %s symbol!', syscall_table_name)
-			return []
+			logging.critical('Unable to find %s symbol!',
+				self.arch.syscall_table_name)
+			return {}
 
 		logging.debug('Syscall table: %r', tbl)
 
@@ -259,7 +249,7 @@ class Kernel:
 		# descriptors for the function pointers in the syscall table.
 
 		text   = self.vmlinux.sections['.text']
-		vaddrs = []
+		vaddrs = {}
 
 		if self.arch.uses_function_descriptors:
 			text_vstart = text.vaddr
@@ -276,12 +266,12 @@ class Kernel:
 				if not opd:
 					logging.critical('Arch uses function descriptors, but '
 						'vmlinux has no .opd section!')
-					return []
+					return {}
 
 				descriptors = self.__unpack_syscall_table(tbl, opd)
 
 				# Translate function descriptors (one more level of indirection)
-				for desc_vaddr in descriptors:
+				for i, desc_vaddr in enumerate(descriptors):
 					vaddr = self.vmlinux.vaddr_read(desc_vaddr, self.__long_size)
 					vaddr = struct.unpack(self.__long_pack_fmt, vaddr)[0]
 
@@ -289,32 +279,59 @@ class Kernel:
 						logging.warn('Function descriptor at 0x%x points '
 							'outside .text: something is off!', desc_vaddr)
 
-					vaddrs.append(vaddr)
+					vaddrs[i] = vaddr
 			else:
 				logging.debug('Syscall table does NOT use function descriptors')
 
 		if not vaddrs:
-			vaddrs = self.__unpack_syscall_table(tbl, text)
+			vaddrs = dict(enumerate(self.__unpack_syscall_table(tbl, text)))
 
 		if not vaddrs:
 			logging.critical('Could not extract any valid function pointer '
-				'from %s, giving up!', syscall_table_name)
+				'from %s, giving up!', self.arch.syscall_table_name)
 			logging.critical('Is the kernel relocatable? Relocation entries '
 				'for the syscall table are not supported.')
+			return {}
+
+		return vaddrs
+
+	def __extract_syscalls(self) -> List[Syscall]:
+		if self.arch.bits32 != self.vmlinux.bits32:
+			a, b = (32, 64) if self.arch.bits32 else (64, 32)
+			logging.critical('Selected arch is %d-bit, but kernel is %d-bit', a, b)
+			return []
+
+		self.arch.adjust_abi(self.vmlinux)
+		logging.debug('Arch: %r', self.arch)
+
+		have_syscall_table = self.arch.syscall_table_name is not None
+
+		if have_syscall_table:
+			vaddrs = self.__syscall_vaddrs_from_syscall_table()
+		else:
+			logging.warn('No syscall table available! Trying my best...')
+			vaddrs = self.arch.extract_syscall_vaddrs(self.vmlinux)
+
+		if not vaddrs:
+			logging.critical('Unable to extract any syscall vaddr, giving up!')
 			return []
 
 		# Find all ni_syscall symbols (there might be multiple) and keep track
 		# of them for later in order to detect non-implemented syscalls.
+		ni_syscalls = set()
+
 		for sym in self.vmlinux.functions.values():
 			if self.arch.symbol_is_ni_syscall(sym):
 				ni_syscalls.add(sym)
-				logging.debug('Found ni_syscall: %r', sym)
+
+		for sym in sorted(ni_syscalls, key=attrgetter('name')):
+			logging.debug('Found ni_syscall: %r', sym)
 
 		if not ni_syscalls:
 			logging.critical('No ni_syscall found!')
 			return []
 
-		seen = set(vaddrs)
+		seen = set(vaddrs.values())
 		symbols_by_vaddr = {sym.vaddr: sym for sym in ni_syscalls}
 		discarded_logs = []
 		preferred_logs = []
@@ -364,35 +381,48 @@ class Kernel:
 
 		# Sanity check: the only repeated vaddrs in the syscall table should be
 		# the ones for *_ni_syscall. Warn in case there are others.
-		counts = sorted(Counter(vaddrs).items(), key=itemgetter(1), reverse=True)
-		best = symbols_by_vaddr[counts[0][0]]
+		counts = Counter(vaddrs.values()).items()
+		counts = filter(lambda c: c[1] > 1, counts)
+		counts = sorted(counts, key=itemgetter(1), reverse=True)
 
-		if best not in ni_syscalls:
-			logging.error('Interesting! I was expecting *_ni_syscall to be the '
-				'most frequent symbol in the syscall table, but %s is ('
-				'appearing %d times).', best.name, counts[0][1])
+		if counts:
+			# In case of no syscall table, ni_syscalls may have already been
+			# filtered by arch-specific extraction code, so don't sweat it.
+			if any(sym in ni_syscalls for sym in vaddrs.values()):
+				best = symbols_by_vaddr[counts[0][0]]
 
-		for va, n in counts[1:]:
-			if n == 1:
-				break
+				if best not in ni_syscalls:
+					logging.error('Interesting! I was expecting *_ni_syscall to be the '
+						'most frequent symbol in the syscall table, but %s is ('
+						'appearing %d times).', best.name, counts[0][1])
 
-			logging.warn('Interesting! Vaddr 0x%x (%s) found %d times in %s',
-				va, symbols_by_vaddr.get(va, '<unknown>'), n, syscall_table_name)
+		for va, n in counts:
+			sym = symbols_by_vaddr.get(va, f'{va:#x} <unknown symbol!>')
+			if sym not in ni_syscalls:
+				logging.warn('Interesting! Vaddr found %d times: %s', n, sym)
 
 		symbols      = []
 		symbol_names = []
 		ni_count     = defaultdict(int)
 
 		# Filter out only defined syscalls
-		for idx, vaddr in enumerate(vaddrs):
+		for idx, vaddr in sorted(vaddrs.items()):
 			sym = symbols_by_vaddr.get(vaddr)
 			if sym is None:
-				logging.error('Unable to find symbol for %s[%d]: 0x%x',
-					syscall_table_name, idx, vaddr)
+				if have_syscall_table:
+					logging.error('Unable to find symbol for %s[%d]: 0x%x',
+						self.arch.syscall_table_name, idx, vaddr)
+				else:
+					logging.error('Unable to find symbol for #%d 0x%x', idx,
+						vaddr)
 				continue
 
 			if high_verbosity():
-				logging.debug('%s[%d]: %s', syscall_table_name, idx, sym)
+				if have_syscall_table:
+					logging.debug('%s[%d]: %s', self.arch.syscall_table_name,
+						idx, sym)
+				else:
+					logging.debug('#%d: %s', idx, sym)
 
 			if sym in ni_syscalls:
 				ni_count[sym.name] += 1
@@ -435,7 +465,7 @@ class Kernel:
 
 		ni_total = 0
 		for name, n in sorted(ni_count.items(), key=itemgetter(1), reverse=True):
-			logging.info('%d syscall table entries point to %s', n, name)
+			logging.info('%d entries point to %s', n, name)
 			ni_total += n
 
 		# Add esoteric syscalls to the list, if any. These do not need any name
@@ -457,7 +487,7 @@ class Kernel:
 
 		# Some syscalls are just a dummy function that does `return -ENOSYS` or
 		# some other error, meaning that the syscall is not actually
-		# implemented, even if present inthe syscall table. We can filter those
+		# implemented, even if present in the syscall table. We can filter those
 		# out on archs for which we have .is_dummy_syscall() implemented, but
 		# we're not guaranteed to catch everything. For example,
 		# .is_dummy_syscall() may be useless if the symbol has bad/zero size or

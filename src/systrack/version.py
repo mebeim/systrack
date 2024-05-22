@@ -1,5 +1,5 @@
 VERSION = '0.4'
-VERSION_COPY = f'''\
+VERSION_COPY = '''\
 Copyright (C) 2023-2024 Marco Bonelli
 Licensed under the GNU General Public License v3.0
 '''

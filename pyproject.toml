@@ -6,7 +6,7 @@ maintainers = [{name = 'Marco Bonelli', email = 'marco@mebeim.net'}]
 license = {file = 'LICENSE'}
 readme = 'README.md'
 platforms = 'any'
-requires-python = '>=3.6'
+requires-python = '>=3.8'
 dynamic = ['version']
 keywords = ['systrack', 'linux', 'kernel', 'syscall', 'kconfig', 'elf', 'abi']
 classifiers = [
@@ -25,6 +25,10 @@ classifiers = [
 	'Topic :: System :: Operating System Kernels :: Linux',
 	'Topic :: Utilities',
 ]
+dependencies = [
+	'iced-x86~=1.21.0',
+	'jinja2~=3.1.2'
+]
 
 [project.urls]
 homepage = 'https://github.com/mebeim/systrack'
@@ -32,10 +36,6 @@ repository = 'https://github.com/mebeim/systrack.git'
 
 [project.scripts]
 systrack = 'systrack.__main__:main'
-
-[project.optional-dependencies]
-full = ['jinja2']
-html = ['jinja2']
 
 [build-system]
 requires = ['hatchling']
