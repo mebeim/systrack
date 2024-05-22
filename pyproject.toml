@@ -1,9 +1,9 @@
 [project]
 name = 'systrack'
 description = 'Linux kernel syscall implementation tracker'
-authors = [{name = 'Marco Bonelli', email = 'marco@mebeim.net'}]
-maintainers = [{name = 'Marco Bonelli', email = 'marco@mebeim.net'}]
-license = {file = 'LICENSE'}
+authors = [{name = 'Marco Bonelli'}, {name = 'Marco Bonelli', email = 'marco@mebeim.net'}]
+maintainers = [{name = 'Marco Bonelli'}, {name = 'Marco Bonelli', email = 'marco@mebeim.net'}]
+license = {text = 'GNU General Public License v3 (GPLv3)'}
 readme = 'README.md'
 platforms = 'any'
 requires-python = '>=3.8'
@@ -31,8 +31,9 @@ dependencies = [
 ]
 
 [project.urls]
-homepage = 'https://github.com/mebeim/systrack'
-repository = 'https://github.com/mebeim/systrack.git'
+Homepage = 'https://github.com/mebeim/systrack'
+Repository = 'https://github.com/mebeim/systrack.git'
+Changelog = 'https://github.com/mebeim/systrack.git/blob/master/CHANGELOG.md'
 
 [project.scripts]
 systrack = 'systrack.__main__:main'
