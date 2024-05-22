@@ -31,7 +31,7 @@ def parse_args() -> argparse.Namespace:
 	'''
 	ap = argparse.ArgumentParser(
 		prog='systrack',
-		usage=f'systrack [OPTIONS...] [VMLINUX]',
+		usage='systrack [OPTIONS...] [VMLINUX]',
 		description='Analyze a Linux kernel image and extract information about implemented syscalls',
 		formatter_class=argparse.RawTextHelpFormatter
 	)
@@ -265,7 +265,7 @@ def main() -> int:
 		return 1
 
 	if not command_available('readelf'):
-		eprint(f'Command "readelf" unavailable, can\'t do much without it!')
+		eprint('Command "readelf" unavailable, can\'t do much without it!')
 		return 127
 
 	kernel = instantiate_kernel(arch_name, vmlinux, kdir, outdir, rdir)
