@@ -1,6 +1,37 @@
 Systrack changelog
 ==================
 
+v0.5
+----
+
+We tried so hard, and got so far, but in the end, we need a disassembler! x86
+mitigations have defeated us, we no longer have syscall tables to rely on.
+Kernel developers were kind enough to write very simple ABI-specific
+switch-based handlers to dispach syscalls, so analysis is still possible... just
+significantly more complicated.
+
+**Breaking changes**:
+
+- Drop support for Python 3.6 and 3.7. Systrack now requires Python 3.8+. This
+  is because of the new dependency on
+  [`iced-x86`](https://pypi.org/project/iced-x86/).
+
+**Improvements**:
+
+- x86: support new kernels (6.9+) with no syscall tables.
+- Remove unnecessary spaces between asterisks for double pointers in function
+  signatures.
+- Avoid KFCI `__{cfi,pfx}_` symbols when looking for `ni_syscall` symbols.
+
+**Internal changes**:
+
+- Depend on [`iced-x86`](https://pypi.org/project/iced-x86/) for disassembling
+  x86 instructions and on [`jinja2`](https://pypi.org/project/jinja2/) for HTML
+  output directly. Remove optional dependencies and only build one package.
+- Rename `test` folder to `tests` to use the `hatch test` as test commnad
+- Improve logging reproducibility by sorting more debugging log output.
+- Improve broken Python package metadata (Python packaging moment).
+
 v0.4
 ----
 
