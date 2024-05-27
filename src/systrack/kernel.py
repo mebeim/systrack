@@ -338,8 +338,9 @@ class Kernel:
 		preferred_logs = []
 
 		# Create a mapping vaddr -> symbol for every vaddr in the syscall table
-		# for convenience. Sort symbols by name to generate reproducible results
-		# and logs.
+		# for convenience. Sort symbols by name for reproducible results. We
+		# look at .symbols instead of .functions here because (of course) some
+		# of these symbols may not be classified as FUNC.
 		for sym in sorted(self.vmlinux.symbols.values(), key=attrgetter('name')):
 			vaddr = sym.vaddr
 			if vaddr not in seen:
@@ -363,6 +364,11 @@ class Kernel:
 					preferred_logs.append((pref.name, other.name))
 
 			symbols_by_vaddr[vaddr] = sym
+
+		# Sort logs for reproducible output (the above sorting does not
+		# guarantee that these are sorted as well).
+		discarded_logs.sort()
+		preferred_logs.sort()
 
 		for sym, other in discarded_logs:
 			logging.debug('Discarding %s as alias for %s', sym, other)
