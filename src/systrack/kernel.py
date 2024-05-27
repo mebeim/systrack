@@ -441,7 +441,10 @@ class Kernel:
 		# Find common syscall symbol prefixes (e.g. "__x64_sys_") in order to be
 		# able to strip them later to obtain the actual syscall name
 		prefixes = common_syscall_symbol_prefixes(symbol_names, 20)
-		logging.info('Common syscall symbol prefixes: %s', ', '.join(prefixes))
+		if prefixes:
+			logging.info('Common syscall symbol prefixes: %s', ', '.join(prefixes))
+		else:
+			logging.warn('No common syscall symbol prefixes found (weird!)')
 
 		syscalls  = []
 		n_skipped = 0
