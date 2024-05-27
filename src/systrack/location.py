@@ -218,7 +218,8 @@ def adjust_line(file: Path, line: int) -> int:
 
 	return line
 
-def extract_syscall_locations(syscalls: List[Syscall], vmlinux: ELF, kdir: Path, rdir: Path, arch: Arch):
+def extract_syscall_locations(syscalls: List[Syscall], vmlinux: ELF, arch: Arch,
+		kdir: Optional[Path], rdir: Optional[Path]):
 	if not command_available('addr2line'):
 		logging.warning('Command "addr2line" unavailable, skipping location info extraction')
 		return
@@ -239,7 +240,7 @@ def extract_syscall_locations(syscalls: List[Syscall], vmlinux: ELF, kdir: Path,
 		if any(map(attrgetter('file'), syscalls)):
 			logging.warning('No kernel source available, trusting addr2line output for location info')
 		else:
-			logging.info('No kernel source available and no addr2line output, cannot extract location info')
+			logging.warning('No kernel source available and no addr2line output, cannot extract location info')
 
 		return
 

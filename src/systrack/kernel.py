@@ -7,7 +7,7 @@ from time import monotonic
 from os import sched_getaffinity
 from operator import itemgetter, attrgetter
 from collections import defaultdict, Counter
-from typing import Tuple, List, Dict, Iterator, Union, Any
+from typing import Tuple, List, Dict, Iterator, Union, Any, Optional
 
 from .arch import arch_from_name, arch_from_vmlinux
 from .elf import ELF, Symbol, Section
@@ -41,9 +41,10 @@ class Kernel:
 	__long_size       = None
 	__long_pack_fmt   = None
 
-	def __init__(self, arch_name: str = None, vmlinux: Path = None,
-			kdir: Path = None, outdir: Path = None, rdir: Path = None,
-			toolchain_prefix: str = None):
+	def __init__(self, arch_name: Optional[str] = None,
+			vmlinux: Optional[Path] = None, kdir: Optional[Path] = None,
+			outdir: Optional[Path] = None, rdir: Optional[Path] = None,
+			toolchain_prefix: Optional[str] = None):
 		if not kdir and not vmlinux:
 			raise ValueError('at least one of vmlinux or kdir is needed')
 		if arch_name is None and vmlinux is None:
@@ -502,7 +503,7 @@ class Kernel:
 
 		# Find locations and signatures for all the syscalls we found (except
 		# esoteric ones).
-		extract_syscall_locations(syscalls, self.vmlinux, self.kdir, self.rdir, self.arch)
+		extract_syscall_locations(syscalls, self.vmlinux, self.arch, self.kdir, self.rdir)
 		extract_syscall_signatures(syscalls, self.vmlinux, self.kdir is not None)
 
 		# Second pass to extract only implemented syscalls: warn for potentially
