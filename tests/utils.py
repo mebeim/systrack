@@ -1,3 +1,5 @@
+from pathlib import Path
+from subprocess import check_call
 from typing import Dict, Union
 
 from systrack.arch import Arch
@@ -38,3 +40,8 @@ def arch_is_dummy_syscall(arch: Arch, code: bytes):
 	sc  = Syscall(0x0, 0x0, 'test', 'test', sym, None)
 	elf = MockELF(True, {sym: code})
 	return arch.is_dummy_syscall(sc, elf)
+
+def make_test_elf(name: str) -> Path:
+	target = Path(__file__).parent / 'data' / name
+	check_call(['make', '-C', target.parent, target.name])
+	return target
