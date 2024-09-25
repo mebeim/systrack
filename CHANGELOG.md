@@ -1,6 +1,18 @@
 Systrack changelog
 ==================
 
+v0.5.1
+------
+
+**Improvements**:
+
+- x86: improve x86 syscall extraction code fixing undetected CALL targets.
+
+**Internal changes**:
+
+- x86: add some tests for syscall extraction based on v6.11 kernel build.
+
+
 v0.5
 ----
 
