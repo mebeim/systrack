@@ -59,18 +59,20 @@ def parse_args() -> argparse.Namespace:
 		help=wrap_help('output format: text, json or html (default: text)'))
 	ap.add_argument('--absolute-paths', action='store_true',
 		help=wrap_help('output absolute paths instead of paths relative to KDIR'))
-	ap.add_argument('--remap', metavar='ORIG_KRID',
-		help=wrap_help('replace ORIG_KRID with KDIR for paths obtained from ELF '
-			'debug information; needed if the kernel was built with ORIG_KDIR '
-			'as source directory instead of KDIR, and debug info contains '
-			'absolute paths to ORIG_KDIR'))
+	ap.add_argument('--remap', metavar='ORIG_KDIR',
+		help=wrap_help('replace ORIG_KDIR with the KDIR provided with '
+			'-k/--kdir for paths obtained from ELF debug information; needed '
+			'if the kernel was built with ORIG_KDIR as source directory '
+			'instead of KDIR, and debug info contains absolute paths to '
+			'ORIG_KDIR'))
 	ap.add_argument('--checkout', metavar='REF',
 		help=wrap_help('git checkout to REF inside KDIR before doing anything; '
 			'the special value "auto" can be used to checkout to the tag '
 			'corresponding to the detected kernel version from VMLINUX'))
 	ap.add_argument('--disable-opt', action='store_true',
-		help=wrap_help('try building kernel with reduces/disabled optimization '
-		'for more reliable location results; only meaningful with -b'))
+		help=wrap_help('try building kernel with reduced/disabled '
+		'optimizations for more reliable location results; only meaningful '
+		'with -b'))
 	ap.add_argument('-q', '--quiet', action='count', default=0,
 		help=wrap_help('quietness level:\n'
 		'  -q = no info, -qq = no warnings, -qqq = no errors\n'
@@ -218,7 +220,7 @@ def main() -> int:
 		gcc_cmd = cross + 'gcc'
 
 		if not command_available(gcc_cmd):
-			eprint(f'Command "{cross}gcc" not found')
+			eprint(f'Command "{gcc_cmd}" not found')
 			eprint('Make sure your cross-compilation toolchain is in $PATH')
 			return 127
 
