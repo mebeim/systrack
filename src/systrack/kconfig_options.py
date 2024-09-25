@@ -42,7 +42,9 @@ VERSION_INF  = (9999999999,)
 # - EXPERIMENTAL=y might also be useful for arch-specific stuff, though it's old
 #   so I haven't really *experimented* with it yet (lol)
 # - FTRACE_SYSCALLS=y adds `__syscall_meta_xxx` structs for each syscall, which
-#   are very useful to extract signature info.
+#   are very useful to extract signature info. It also helps on x86 since v6.9
+#   as syscall tables are not used anymore and `sys_call_table` is only
+#   generated for ftrace.
 # - FTRACE=y is needed for FTRACE_SYSCALLS
 #
 # TODO: version for RELOCATABLE and RANDOMIZE_BASE depends on arch
