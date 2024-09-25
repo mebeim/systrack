@@ -1,7 +1,7 @@
 import logging
 from collections import defaultdict
 from operator import itemgetter
-from typing import Tuple, List, Dict, DefaultDict, Set, Type, Optional
+from typing import Tuple, List, Dict, DefaultDict, Set, FrozenSet, Type, Optional
 
 from iced_x86 import Decoder, Instruction
 from iced_x86.Mnemonic import Mnemonic, RET, CMP, TEST, JA, JAE, JB, JBE, JE, JNE
@@ -366,7 +366,7 @@ class ArchX86(Arch):
 		# Maximum syscall number supported plus 1
 		nr_max = 0x1000
 		# Possible syscall numbers at a given address (instruction pointer)
-		nrs: DefaultDict[int,Set[int]] = defaultdict(set, {start: set(range(nr_max))})
+		nrs: DefaultDict[int,FrozenSet[int]] = defaultdict(frozenset, {start: frozenset(range(nr_max))})
 		# Candidate branches to syscall functions
 		candidate_insns: Set[Instruction] = set()
 		# Accumulate non-NOP skipped insns for logging/debugging purposes
@@ -393,7 +393,7 @@ class ArchX86(Arch):
 				cur_nrs       = nrs[ip]
 
 				# Only support a TEST that appears right before JE/JNE, which is
-				# functionally to a CMP with 0.
+				# functionally equal to a CMP with 0.
 				if prev_mnemonic == TEST and mnemonic not in (JE, JNE):
 					logging.error('Unsupported instruction after TEST: %#x: %r', ip, insn)
 					return None
@@ -406,8 +406,8 @@ class ArchX86(Arch):
 						logging.error('Unsupported TEST instruction %#x: %r', ip, insn)
 						return None
 
-					# Treat `TEST reg, reg` as `CMP reg, 0`. We make sure that this
-					# is the only possible case above.
+					# Treat `TEST reg, reg` as `CMP reg, 0`. We make sure that
+					# this is the only possible case above.
 					last_cmp_immediate = 0
 					nrs[next_ip] |= cur_nrs
 					continue
@@ -457,18 +457,18 @@ class ArchX86(Arch):
 					target_ip = insn.near_branch_target
 
 					if mnemonic == JA:
-						taken_filter = set(range(last_cmp_immediate + 1, nr_max))
+						taken_filter = frozenset(range(last_cmp_immediate + 1, nr_max))
 					elif mnemonic == JAE:
-						taken_filter = set(range(last_cmp_immediate, nr_max))
+						taken_filter = frozenset(range(last_cmp_immediate, nr_max))
 					elif mnemonic == JB:
-						taken_filter = set(range(last_cmp_immediate))
+						taken_filter = frozenset(range(last_cmp_immediate))
 					elif mnemonic == JBE:
-						taken_filter = set(range(last_cmp_immediate + 1))
+						taken_filter = frozenset(range(last_cmp_immediate + 1))
 					elif mnemonic == JE:
-						taken_filter = {last_cmp_immediate}
+						taken_filter = frozenset((last_cmp_immediate,))
 					elif mnemonic == JNE:
-						taken_filter = set(range(0, last_cmp_immediate))
-						taken_filter |= set(range(last_cmp_immediate + 1, nr_max))
+						taken_filter = frozenset(range(0, last_cmp_immediate))
+						taken_filter |= frozenset(range(last_cmp_immediate + 1, nr_max))
 
 					new_taken_nrs = cur_nrs & taken_filter
 					new_not_taken_nrs = cur_nrs - taken_filter
@@ -477,6 +477,7 @@ class ArchX86(Arch):
 						new_taken_nrs, new_not_taken_nrs = new_not_taken_nrs, new_taken_nrs
 				elif insn.is_call_near:
 					target_ip = insn.near_branch_target
+					new_taken_nrs = cur_nrs
 					if start <= target_ip < end:
 						logging.error('%s calling itself??? %r', func.name, insn)
 						return None
@@ -577,7 +578,7 @@ class ArchX86(Arch):
 					len(numbers), insn, vaddr)
 
 				if found_default_case:
-					logging.error('Multiple default switch cases?')
+					logging.error('Multiple default switch cases!?')
 					return {}
 
 				found_default_case = True
@@ -588,8 +589,8 @@ class ArchX86(Arch):
 			for nr in numbers:
 				if nr in vaddrs:
 					if vaddrs[nr] != vaddr:
-						logging.error('Number %d leads to multiple vaddrs: '
-							'%#x %#x. Bailing out!', nr, vaddrs[nr], vaddr)
+						logging.error('Number %d leads to multiple vaddrs!? '
+							'Got %#x and %#x. Bailing out!', nr, vaddrs[nr], vaddr)
 						return {}
 					continue
 
