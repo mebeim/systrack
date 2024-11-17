@@ -1,4 +1,5 @@
 *
 !.gitignore
+!.gitattributes
 !Makefile
 !*.s

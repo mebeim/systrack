@@ -1,0 +1,3 @@
+# Exclude assembly from linguist code stats (prevents GitHub from marking the
+# repository as >50% assembly).
+*.s linguist-vendored
