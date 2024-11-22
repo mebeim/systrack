@@ -130,7 +130,7 @@ class ArchPowerPC(Arch):
 			# pkey_alloc, pkey_free, pkey_mprotect
 			self.kconfig.add((4,16)  , VERSION_INF, 'PPC_MEM_KEYS=y', ['PPC_BOOK3S_64=y', 'PPC_64S_HASH_MMU=y'])
 			# switch_endian (esoteric fast version)
-			self.kconfig.add((4,15)  , VERSION_INF, 'PPC_FAST_ENDIAN_SWITCH=y', []),
+			self.kconfig.add((4,15)  , (6,12)     , 'PPC_FAST_ENDIAN_SWITCH=y', []),
 			# spu_run, spu_create
 			self.kconfig.add((2,6,16), VERSION_INF, 'SPU_FS=y'  , ['PPC_CELL=y', 'COREDUMP=y']),
 			self.kconfig.add((2,6,18), VERSION_INF, 'SPU_BASE=y', []),
@@ -275,6 +275,11 @@ class ArchPowerPC(Arch):
 		return number // 2
 
 	def extract_esoteric_syscalls(self, vmlinux: ELF) -> EsotericSyscall:
+		# This is currently only used for fast switch_endian, which is only
+		# implemented for ppc64 and was killed in v6.12. Save some time here.
+		if self.abi != 'ppc64' or self.kernel_version >= (6,12):
+			return []
+
 		# The switch_endian syscall has a "fast" version implemented with a
 		# branch at syscall entry point (arch/powerpc/kernel/exceptions-64s.S).
 		#
@@ -292,16 +297,13 @@ class ArchPowerPC(Arch):
 		#   4c 00 00 24     rfid
 		#
 		# This "fast" implementation depends on PPC_FAST_ENDIAN_SWITCH from
-		# v4.15 onwards. Old kernels only had this fast version and no
-		# switch_endian syscall in the syscall table, which was added in v4.1
-		# (529d235a0e190ded1d21ccc80a73e625ebcad09b).
+		# v4.15 onwards. It was removed in v6.12. Old kernels only had this fast
+		# version and no switch_endian syscall in the syscall table, which was
+		# added in v4.1 (529d235a0e190ded1d21ccc80a73e625ebcad09b).
 		#
 		# FIXME: on older kernels (< v5.0) the associated syscall entry symbol
 		# may be different.
 		#
-		if self.abi != 'ppc64':
-			return []
-
 		exc = vmlinux.symbols.get('exc_real_0xc00_system_call')
 		if exc is None:
 			return []
