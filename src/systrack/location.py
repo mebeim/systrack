@@ -79,7 +79,9 @@ def grep_kernel_sources(kdir: Path, arch: Arch, syscalls: List[Syscall]) -> Iter
 
 	oddstyle = arch.syscall_def_regexp()
 	if oddstyle is not None:
-		base_exp = f'(({base_exp})|({oddstyle}))'
+		exp = fr'({base_exp}|{oddstyle})\s*\w+'
+	else:
+		exp = base_exp + r'\s*\w+'
 
 	if not command_available('rg'):
 		logging.debug('No ripgrep available :( falling back to slow python implementation')
@@ -99,7 +101,7 @@ def grep_kernel_sources(kdir: Path, arch: Arch, syscalls: List[Syscall]) -> Iter
 			if not path.match(arch.name):
 				exclude.add(path.resolve())
 
-		out = list(grep_recursive(kdir, re.compile((base_exp + r'\s*\w+').encode()), exclude))
+		out = list(grep_recursive(kdir, re.compile(exp.encode()), exclude))
 	else:
 		out = ensure_command((
 			'rg', '--line-number',
@@ -113,7 +115,7 @@ def grep_kernel_sources(kdir: Path, arch: Arch, syscalls: List[Syscall]) -> Iter
 			'--glob', '!arch/*',           # ignore other architectures (important)
 			'--glob', f'arch/{arch.name}', # include the correct one
 			'--glob', '*.c',
-			base_exp + r'\s*\w+'
+			exp
 		), cwd=kdir).splitlines()
 
 	exps = {s: re.compile(rf':{base_exp}{s.origname}[,)]') for s in syscalls}
@@ -140,28 +142,36 @@ def grep_kernel_sources(kdir: Path, arch: Arch, syscalls: List[Syscall]) -> Iter
 	for sc in exps:
 		yield sc, None, None
 
-def good_location(file: Path, line: int, arch: Arch, name: str = '') -> bool:
-	# Here name is optional, pass it to match the given syscall name in the
-	# source code exactly.
+def good_definition(arch: Arch, definition: str, syscall_name: str) -> bool:
+	# There are a lot of legacy/weird syscall definitions and some symbols can
+	# therefore point (addr2line output) to old-style `asmlinkage` functions
+	newstyle  = ('^(COMPAT_)?' if arch.compat else '^')
+	newstyle += rf'SYSCALL(32)?_DEFINE\d\s*\({syscall_name}\b'
+	oldstyle  = rf'^asmlinkage\s*(unsigned\s+)?\w+\s*sys(32)?_{syscall_name}\('
 
+	if re.match(f'{newstyle}|{oldstyle}', definition) is not None:
+		return True
+
+	# Also try matching old-style name if equal to full function name
+	if syscall_name.startswith('sys_') and re.match(r'^asmlinkage\s*'
+			rf'(unsigned\s+)?\w+\s*{syscall_name}\s*\(', definition) is not None:
+		return True
+
+	# Some archs use weirdly named SYSCALL_DEFINEn macros, e.g. PPC32 ABI on
+	# PowerPC 64-bit with its "PPC32_SYSCALL_DEFINEn", or weirdly named sys_xxx
+	# functions, e.g. ARM oabi with its "asmlinkage int sys_oabi_xxx(...)".
+	oddstyle = arch.syscall_def_regexp(syscall_name)
+	return oddstyle is not None and re.match(oddstyle, definition) is not None
+
+def good_location(file: Path, line: int, arch: Arch, sc: Syscall) -> bool:
 	with file.open('rb') as f:
 		for _ in range(line - 1):
 			next(f)
 
 		definition = f.readline().decode()
 
-	# There are a lot of legacy/weird syscall definitions and some symbols can
-	# therefore point (addr2line output) to old-style `asmlinkage` functions
-	newstyle = ('^(COMPAT_)?' if arch.compat else '^') + rf'SYSCALL(32)?_DEFINE\d\({name}'
-	oldstyle = rf'^asmlinkage \w+' + (rf' sys(32)?_{name}\(' if name else '')
-
-	if re.match(f'{oldstyle}|{newstyle}', definition) is not None:
-		return True
-
-	# Some archs use weirdly named SYSCALL_DEFINEn macros, e.g. PPC32 ABI on
-	# PowerPC 64-bit with its "PPC32_SYSCALL_DEFINEn".
-	oddstyle = arch.syscall_def_regexp(name)
-	return oddstyle is not None and re.match(oddstyle, definition) is not None
+	return good_definition(arch, definition, sc.origname) \
+		or good_definition(arch, definition, sc.name)
 
 def adjust_line(file: Path, line: int) -> int:
 	try:
@@ -284,7 +294,7 @@ def extract_syscall_locations(syscalls: List[Syscall], vmlinux: ELF, arch: Arch,
 		if sc.esoteric:
 			continue
 
-		if good_location(file, line, arch):
+		if good_location(file, line, arch, sc):
 			sc.good_location = True
 		elif sc.symbol.size > 1:
 			to_adjust.append(sc)
@@ -324,11 +334,9 @@ def extract_syscall_locations(syscalls: List[Syscall], vmlinux: ELF, arch: Arch,
 
 		for sc, loc in zip(to_adjust, new_locs):
 			file, line = loc
-			sc.file = file = remap(file)
+			file = remap(file)
 
 			if file is None or not file.is_file() or line is None:
-				sc.line = line
-
 				if sc.symbol.size > 2:
 					to_retry.append(sc)
 					logging.debug('Location needs full-range adjustment '
@@ -341,9 +349,11 @@ def extract_syscall_locations(syscalls: List[Syscall], vmlinux: ELF, arch: Arch,
 						sc.symbol.size - 1, *loc)
 				continue
 
-			sc.line = line = adjust_line(file, line)
+			line = adjust_line(file, line)
 
-			if good_location(file, line, arch, sc.origname):
+			if good_location(file, line, arch, sc):
+				sc.file = file
+				sc.line = line
 				sc.good_location = True
 			else:
 				if sc.symbol.size > 2:
@@ -372,16 +382,20 @@ def extract_syscall_locations(syscalls: List[Syscall], vmlinux: ELF, arch: Arch,
 
 		for offset, loc in enumerate(smart_addr2line(vmlinux, addrs, kdir), 1):
 			file, line = loc
-			sc.file = file = remap(file)
+			file = remap(file)
 
 			if file is None or not file.is_file() or line is None:
-				sc.line = line
 				continue
 
 			invalid = False
-			sc.line = line = adjust_line(file, int(line))
+			line = adjust_line(file, int(line))
 
-			if good_location(file, line, arch, sc.origname):
+			if sc.name == 'creat':
+				logging.critical('%s %d', file, line)
+
+			if good_location(file, line, arch, sc):
+				sc.file = file
+				sc.line = line
 				sc.good_location = True
 				logging.debug('Location found through full-range adjustment: %s'
 					' (%s+0x%x) -> %s:%d', sc.origname, sc.symbol.name, offset,
@@ -427,6 +441,9 @@ def extract_syscall_locations(syscalls: List[Syscall], vmlinux: ELF, arch: Arch,
 	# preprocessor (which we are not even going to bother trying).
 
 	# Sort by syscall name, group not found first
+	for x in to_grep:
+		logging.critical('%r', x)
+
 	grepped = grep_kernel_sources(kdir, arch, to_grep)
 	grepped = sorted(grepped, key=lambda x: (x[1] is not None, x[0].name))
 
@@ -436,7 +453,7 @@ def extract_syscall_locations(syscalls: List[Syscall], vmlinux: ELF, arch: Arch,
 				'(orig name %s)', sc.name, sc.origname)
 			continue
 
-		if good_location(file, line, arch, sc.origname):
+		if good_location(file, line, arch, sc):
 			sc.file = file
 			sc.line = line
 			sc.good_location = True
