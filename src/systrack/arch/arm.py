@@ -151,3 +151,13 @@ class ArchArm(Arch):
 			res.append((base + 6, 'get_tls', 'arm_syscall', (), None))
 
 		return res
+
+	def syscall_def_regexp(self, syscall_name: Optional[str]=None) -> Optional[str]:
+		if self.abi != 'oabi':
+			return None
+
+		if syscall_name is not None:
+			if syscall_name.startswith('sys_oabi_'):
+				return rf'\basmlinkage\s*(unsigned\s+)?\w+\s*{syscall_name}\s*\('
+			return rf'\basmlinkage\s*(unsigned\s+)?\w+\s*sys_oabi_{syscall_name}\s*\('
+		return r'\basmlinkage\s*(unsigned\s+)?\w+\s*sys_oabi_\w+\s*\('

@@ -348,5 +348,5 @@ class ArchPowerPC(Arch):
 			return None
 
 		if syscall_name is not None:
-			return rf'\bPPC32_SYSCALL_DEFINE\d\({syscall_name}'
+			return rf'\bPPC32_SYSCALL_DEFINE\d\s*\({syscall_name}\b'
 		return r'\bPPC32_SYSCALL_DEFINE\d\s*\('

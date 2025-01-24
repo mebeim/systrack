@@ -293,14 +293,20 @@ class Arch(ABC):
 
 	def syscall_def_regexp(self, syscall_name: Optional[str]=None) -> Optional[str]:
 		'''Return a regexp capable of matching syscall definitions using
-		arch-specific SYSCALL_DEFINEx macros with weird names. If syscall_name
-		is given, return a regexp to match this syscall definition exactly,
-		otherwise just a generic one.
+		arch-specific SYSCALL_DEFINEx macros with weird names or arch-specific
+		adsmlinkage function name prefixes. If syscall_name is given, return a
+		regexp to match this syscall definition exactly, otherwise just a
+		generic one.
 
 		With syscall_name: the returned regexp should match a macro call up to
-		and including the syscall name, e.g., "SYSCALL_DEFINE3(name".
+		and **including** the syscall name plus a word boundary or any useful
+		delimiter after the name to match it completely.
+		E.g.: r'SYSCALL_DEFINE\\d\\(name\\b' or r'asmlinkage long sys_name\\('.
 
 		Without syscall_name: the returned regexp should match the macro call up
-		to and including the first open parenthesis, e.g., "SYSCALL_DEFINE3(".
+		to and **including** the first open parenthesis.
+		E.g.: r'SYSCALL_DEFINE\\d\\(' or r'asmlinkage long sys_\\w+\\('.
 		'''
+		# Dev note: the \\ above are because that's a docstring (lol), you
+		# obviously only need one in the regexp itself with the r'' syntax.
 		return None

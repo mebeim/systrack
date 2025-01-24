@@ -597,3 +597,14 @@ class ArchX86(Arch):
 				vaddrs[nr] = vaddr
 
 		return vaddrs
+
+	def syscall_def_regexp(self, syscall_name: Optional[str]=None) -> Optional[str]:
+		if self.abi != 'x32':
+			return None
+
+		if syscall_name is not None:
+			if syscall_name.startswith('sys32_x32_'):
+				return rf'\basmlinkage\s*(unsigned\s+)?\w+\s*{syscall_name}\s*\('
+			return rf'\basmlinkage\s*(unsigned\s+)?\w+\s*sys32_x32_{syscall_name}\s*\('
+
+		return r'\basmlinkage\s*(unsigned\s+)?\w+\s*sys32_x32_\w+\s*\('

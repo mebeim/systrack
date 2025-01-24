@@ -3,7 +3,7 @@ from typing import Tuple, List, Type, Optional
 from ..elf import Symbol, ELF, E_MACHINE
 from ..kconfig_options import VERSION_ZERO, VERSION_INF
 from ..type_hints import KernelVersion
-from ..utils import VersionedDict, noprefix
+from ..utils import VersionedDict, anyprefix, noprefix
 
 from .arch_base import Arch
 
@@ -113,6 +113,30 @@ class ArchMips(Arch):
 		return super().preferred_symbol(a, b)
 
 	def _normalize_syscall_name(self, name: str) -> str:
-		# E.g. v5.1 asmlinkage int sysm_pipe(void) for weird historical reasons
-		# E.g. v5.18 SYSCALL_DEFINE6(mips_mmap, ...)
-		return noprefix(name, 'sysm_', 'mips_')
+		# E.G. v5.1 asmlinkage int sysm_pipe(void) for weird historical reasons
+		# E.G. v5.18 SYSCALL_DEFINE6(mips_mmap, ...)
+		# E.G. v5.0-6.13+ asmlinkage long mipsmt_sys_sched_setaffinity(...)
+		return noprefix(name, 'sysm_', 'mips_', 'mipsmt_sys_')
+
+	def syscall_def_regexp(self, syscall_name: Optional[str]=None) -> Optional[str]:
+		# Absolutely insane old-style prefixes on MIPS...
+		exps = []
+
+		if syscall_name is not None:
+			if anyprefix(syscall_name, 'sysm_', 'mipsmt_sys_'):
+				exps.append(rf'\basmlinkage\s*(unsigned\s+)?\w+\s*{syscall_name}\s*\(')
+			else:
+				exps.append(rf'\basmlinkage\s*(unsigned\s+)?\w+\s*(sysm|mipsmt_sys)_{syscall_name}\s*\(')
+
+			if self.abi == 'n32':
+				if anyprefix(syscall_name, 'sysn32_'):
+					exps.append(rf'\basmlinkage\s*(unsigned\s+)?\w+\s*{syscall_name}\s*\(')
+				else:
+					exps.append(rf'\basmlinkage\s*(unsigned\s+)?\w+\s*sysn32_{syscall_name}\s*\(')
+		else:
+			exps.append(r'\basmlinkage\s*(unsigned\s+)?\w+\s*(sysm|mipsmt_sys)_\w+\s*\(')
+
+			if self.abi == 'n32':
+				exps.append(r'\basmlinkage\s*(unsigned\s+)?\w+\s*sysn32_\w+\s*\(')
+
+		return '|'.join(exps)
