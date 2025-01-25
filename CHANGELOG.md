@@ -1,6 +1,23 @@
 Systrack changelog
 ==================
 
+
+v0.6
+----
+
+**Improvements**:
+
+- More robust and comprehensive syscall definition location search.
+
+**Bug fixes**:
+
+- Fix broken syscall definition location search and subsequent signature
+  extraction. Some syscalls were incorrectly reported as defined in place of
+  others, also causing the wrong signature to be extracted. Do not fully trust
+  the output of `addr2line` and perform full syscall name matching to fix this.
+  PowerPC was notably affected the most by this issue.
+
+
 v0.5.1
 ------
 
@@ -43,6 +60,7 @@ significantly more complicated.
 - Rename `test` folder to `tests` to use the `hatch test` as test commnad
 - Improve logging reproducibility by sorting more debugging log output.
 - Improve broken Python package metadata (Python packaging moment).
+
 
 v0.4
 ----
