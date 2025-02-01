@@ -48,7 +48,7 @@ class ArchMips(Arch):
 			assert self.abi == 'o32'
 
 			# Just to be clear: for 32-bit we are ok with defconfig
-			self.config_target = 'defconfig'
+			self.config_targets = ('defconfig',)
 
 			self.kconfig.add(VERSION_ZERO, VERSION_INF, '32BIT=y', [])
 			self.kconfig.add(VERSION_ZERO, VERSION_INF, '64BIT=n', [])
@@ -66,7 +66,7 @@ class ArchMips(Arch):
 			# only two MIPS machine with NUMA support along with Longsoon64
 			# (loongson3_defconfig), as the latter is more of a pain in the ass
 			# to build. No need to select CPU release for this, it's R10000.
-			self.config_target = 'ip27_defconfig'
+			self.config_targets = ('ip27_defconfig',)
 
 			self.kconfig.add(VERSION_ZERO, VERSION_INF, '32BIT=n', [])
 			self.kconfig.add(VERSION_ZERO, VERSION_INF, '64BIT=y', [])

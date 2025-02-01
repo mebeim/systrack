@@ -640,8 +640,10 @@ class Kernel:
 		self.__version = None
 
 		logging.info('Configuring for Arch: %r', self.arch)
-		logging.info('Base config target: %s', self.arch.config_target)
-		self.make(self.arch.config_target)
+		logging.info('Base config target(s): %s', ','.join(self.arch.config_targets))
+
+		for target in self.arch.config_targets:
+			self.make(target)
 
 		# TODO: maybe create a check that ensures these are actually applied and
 		# consistent? E.G. check if all the configs that are supposed to exist

@@ -89,13 +89,13 @@ class ArchPowerPC(Arch):
 			# There's ppc_defconfig from v5.2, which also takes half the time to
 			# build so it'd be nice to use... but using it as is without tweaks
 			# compiles a kernel without memfd_create.
-			self.config_target = 'ppc64_defconfig'
+			self.config_targets = ('ppc64_defconfig',)
 			self.kconfig.add(VERSION_ZERO, VERSION_INF, 'PPC64=n', [])
 			self.kconfig.add(VERSION_ZERO, VERSION_INF, 'PPC_BOOK3S_32=y', [])
 		else:
 			self.compat = self.abi != 'ppc64'
 			self.abi_bits32 = self.abi == 'ppc32'
-			self.config_target = 'ppc64_defconfig'
+			self.config_targets = ('ppc64_defconfig',)
 			self.uses_function_descriptors = True
 
 			if self.abi == 'spu':

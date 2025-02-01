@@ -32,8 +32,9 @@ class Arch(ABC):
 	# Kernel version that we are intersted in analyzing
 	kernel_version: KernelVersion = None
 
-	# Make target to build for the base config
-	config_target: str = 'defconfig'
+	# Make targets to run (one by one in the specified order) to obtain the base
+	# config to build the kernel with
+	config_targets: Tuple[str] = ('defconfig',)
 
 	# Name of the syscall table symbol to look for
 	syscall_table_name: Optional[str] = 'sys_call_table'

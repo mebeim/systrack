@@ -32,13 +32,13 @@ class ArchArm(Arch):
 
 		if self.kernel_version >= (3,7):
 			# We want a modern-enough processor for which SMP=y by default
-			self.config_target = 'multi_v7_defconfig'
+			self.config_targets = ('multi_v7_defconfig',)
 		else:
 			# TODO: not sure which config is best for < 3.7, but defconfig
 			# definitely isn't that good, we might be missing some syscalls e.g.
 			# kexec if SMP=n, so warn about it. This is something to think about
 			# when we get around supporting such kernel versions.
-			self.config_target = 'defconfig'
+			self.config_targets = ('defconfig',)
 
 		if self.abi == 'eabi':
 			# Apparently OABI_COMPAT is on by default on old kernels (e.g. 4.0),

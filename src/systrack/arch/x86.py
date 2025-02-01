@@ -89,8 +89,8 @@ class ArchX86(Arch):
 
 		if self.bits32:
 			assert self.abi == 'ia32'
-			self.abi_bits32    = True
-			self.config_target = 'i386_defconfig'
+			self.abi_bits32     = True
+			self.config_targets = ('i386_defconfig',)
 
 			# vm86 (x86 only, 32-bit only, no compat support in 64-bit kernels)
 			self.kconfig.add((2,6,16), (2,6,18)   , 'VM86=y'           , ['X86=y', 'EMBEDDED=y']),
@@ -112,7 +112,7 @@ class ArchX86(Arch):
 		else:
 			self.abi_bits32       = self.abi == 'ia32'
 			self.compat           = self.abi != 'x64'
-			self.config_target    = 'x86_64_defconfig'
+			self.config_targets   = ('x86_64_defconfig',)
 
 			if self.abi == 'x32':
 				# x32 syscalls have this bit set (__X32_SYSCALL_BIT)
