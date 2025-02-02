@@ -328,6 +328,8 @@ def extract_syscall_locations(syscalls: List[Syscall], vmlinux: ELF, arch: Arch,
 			# to wait for everything to complete.
 			logging.warn('All the locations obtained from addr2line look bad, '
 				'did you provide the correct KDIR?')
+			logging.warn('Skipping location information extraction')
+			return
 
 		vaddrs = tuple(map(lambda s: s.symbol.real_vaddr + s.symbol.size - 1, to_adjust))
 		new_locs = smart_addr2line(vmlinux, vaddrs, kdir)
