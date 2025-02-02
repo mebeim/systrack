@@ -432,7 +432,7 @@ class Kernel:
 					logging.debug('#%d: %s', idx, sym)
 
 			if sym in ni_syscalls:
-				ni_count[sym.name] += 1
+				ni_count[sym] += 1
 				continue
 
 			symbols.append((idx, sym))
@@ -474,8 +474,8 @@ class Kernel:
 			syscalls.append(sc)
 
 		ni_total = 0
-		for name, n in sorted(ni_count.items(), key=itemgetter(1), reverse=True):
-			logging.info('%d entries point to %s', n, name)
+		for sym, n in sorted(ni_count.items(), key=itemgetter(1), reverse=True):
+			logging.info('%d entries point to %s', n, sym.name)
 			ni_total += n
 
 		# Add esoteric syscalls to the list, if any. These do not need any name
@@ -495,20 +495,28 @@ class Kernel:
 
 		assert len(syscalls) == len(vaddrs) - ni_total - n_skipped + n_esoteric
 
+		# Extract the most common ni_syscall symbol we found (if any) and its
+		# code to use it as a reference to detect other non-implemented syscalls
+		# (whose handlers could simply be inlined ni_syscall code).
+		ni_ref_sym = max(ni_count, key=ni_count.get) if ni_count else None
+		ni_ref_code = self.vmlinux.read_symbol(ni_ref_sym) if ni_ref_sym else None
+
 		# Some syscalls are just a dummy function that does `return -ENOSYS` or
 		# some other error, meaning that the syscall is not actually
 		# implemented, even if present in the syscall table. We can filter those
-		# out on archs for which we have .is_dummy_syscall() implemented, but
-		# we're not guaranteed to catch everything. For example,
+		# out using .is_dummy_syscall() by either exactly matching the reference
+		# ni_syscall code extracted above or invoking arch-specific logic (if
+		# any).
+		#
+		# We are however not guaranteed to catch everything. For example,
 		# .is_dummy_syscall() may be useless if the symbol has bad/zero size or
 		# if the compiler does something funny and uses weird instructions.
 		# Unless we check sources, we can always have false positives even after
 		# this step.
-		#
-		# Nonetheless, do a first pass to filter out syscalls with dummy
-		# implementation and avoid unnecessary source code grepping to find
-		# their definitions.
-		syscalls = list(filter(lambda s: not self.arch.is_dummy_syscall(s, self.vmlinux), syscalls))
+		syscalls = list(filter(
+			lambda s: not self.arch.is_dummy_syscall(s, self.vmlinux, ni_ref_sym, ni_ref_code),
+			syscalls
+		))
 
 		# Find locations and signatures for all the syscalls we found (except
 		# esoteric ones).

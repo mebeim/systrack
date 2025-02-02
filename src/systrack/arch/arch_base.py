@@ -248,20 +248,38 @@ class Arch(ABC):
 		'''
 		return None
 
-	def is_dummy_syscall(self, sc: Syscall, vmlinux: ELF) -> bool:
+	def is_dummy_syscall(self, sc: Syscall, vmlinux: ELF,
+			ni_sym: Optional[bytes]=None, ni_code: Optional[bytes]=None) -> bool:
 		'''Determine whether a syscall has a dummy implementation (e.g. one that
-		only does `return -ENOSYS/-EINVAL`).
+		only does `return -ENOSYS/-EINVAL`). Try matching the vaddr or code of a
+		known ni_syscall symbol first, otherwise fall back to arch-specific
+		logic.
 
 		NOTE: this is just a wrapper around ._dummy_syscall_code() that also
 		logs some useful info in case a dummy syscall is detected. Subclesses
 		should only override ._dummy_syscall_code().
 		'''
+		if ni_sym is not None:
+			if sc.symbol.real_vaddr == ni_sym.real_vaddr:
+				logging.info('Syscall %s (%s) is not really implemented: '
+					'vaddr matches %s', sc.name, sc.symbol.name,
+					ni_sym.name)
+				return True
+
+		# Cache ni_syscall code for speed as this function will definitely
+		# be called multiple times for the same ni_syscall.
+		if ni_code is not None and sc.symbol.size and vmlinux.read_symbol(sc.symbol) == ni_code:
+			logging.info('Syscall %s (%s) is not really implemented: '
+				'code matches %s', sc.name, sc.symbol.name,
+				ni_sym.name)
+			return True
+
 		code = self._dummy_syscall_code(sc, vmlinux)
 		if code is None:
 			return False
 
-		logging.info('Syscall %s (%s) is not really implemented (dummy '
-			'implementation), code: %s.', sc.name, sc.symbol.name, code.hex())
+		logging.info('Syscall %s (%s) is not really implemented: dummy '
+			'implementation: %s', sc.name, sc.symbol.name, code.hex())
 		return True
 
 	def adjust_syscall_number(self, number: int) -> int:
