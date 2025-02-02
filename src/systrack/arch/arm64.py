@@ -1,4 +1,4 @@
-from typing import Tuple, List, Type, Optional
+from typing import Tuple, List, Optional
 
 from ..elf import Symbol, ELF, E_MACHINE
 from ..kconfig_options import VERSION_INF
@@ -38,7 +38,7 @@ class ArchArm64(Arch):
 			self.syscall_table_name = 'compat_sys_call_table'
 
 	@staticmethod
-	def match(vmlinux: ELF) -> Optional[Tuple[Type[Arch],bool,List[str]]]:
+	def match(vmlinux: ELF) -> Optional[Tuple[bool,List[str]]]:
 		if vmlinux.e_machine != E_MACHINE.EM_AARCH64:
 			return None
 
@@ -49,7 +49,7 @@ class ArchArm64(Arch):
 		else:
 			abis = ['aarch64']
 
-		return ArchArm64, False, abis
+		return False, abis
 
 	def matches(self, vmlinux: ELF) -> bool:
 		return not vmlinux.bits32 and vmlinux.e_machine == E_MACHINE.EM_AARCH64

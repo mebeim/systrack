@@ -1,5 +1,5 @@
 from struct import iter_unpack
-from typing import Tuple, List, Type, Optional
+from typing import Tuple, List, Optional
 from operator import itemgetter
 
 from ..elf import Symbol, ELF, E_MACHINE
@@ -136,7 +136,7 @@ class ArchPowerPC(Arch):
 			self.kconfig.add((2,6,18), VERSION_INF, 'SPU_BASE=y', []),
 
 	@staticmethod
-	def match(vmlinux: ELF) -> Optional[Tuple[Type[Arch],bool,List[str]]]:
+	def match(vmlinux: ELF) -> Optional[Tuple[bool,List[str]]]:
 		if vmlinux.e_machine == E_MACHINE.EM_PPC:
 			assert vmlinux.bits32, 'EM_PPC 64-bit? WAT'
 		elif vmlinux.e_machine == E_MACHINE.EM_PPC64:
@@ -162,7 +162,7 @@ class ArchPowerPC(Arch):
 			if 'spu_syscall_table' in vmlinux.symbols:
 				abis.append('spu')
 
-		return ArchPowerPC, vmlinux.bits32, abis
+		return vmlinux.bits32, abis
 
 	def matches(self, vmlinux: ELF) -> bool:
 		# Linux PPC 32-bit should be big-endian only

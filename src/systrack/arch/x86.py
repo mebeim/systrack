@@ -1,7 +1,7 @@
 import logging
 from collections import defaultdict
 from operator import itemgetter
-from typing import Tuple, List, Dict, DefaultDict, Set, FrozenSet, Type, Optional
+from typing import Tuple, List, Dict, DefaultDict, Set, FrozenSet, Optional
 
 from iced_x86 import Decoder, Instruction
 from iced_x86.Mnemonic import Mnemonic, RET, CMP, TEST, JA, JAE, JB, JBE, JE, JNE
@@ -141,7 +141,7 @@ class ArchX86(Arch):
 			self.kconfig.add((6,6)       , VERSION_INF, 'X86_USER_SHADOW_STACK=y', ['AS_WRUSS=y'])
 
 	@staticmethod
-	def match(vmlinux: ELF) -> Optional[Tuple[Type[Arch],bool,List[str]]]:
+	def match(vmlinux: ELF) -> Optional[Tuple[bool,List[str]]]:
 		if vmlinux.e_machine == E_MACHINE.EM_386:
 			assert vmlinux.bits32, 'EM_386 64-bit? WAT'
 		elif vmlinux.e_machine == E_MACHINE.EM_X86_64:
@@ -169,7 +169,7 @@ class ArchX86(Arch):
 				# Before v5.4 x32 did NOT have its own table
 				abis.append('x32')
 
-		return ArchX86, vmlinux.bits32, abis
+		return vmlinux.bits32, abis
 
 	def matches(self, vmlinux: ELF) -> bool:
 		return (

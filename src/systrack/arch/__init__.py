@@ -103,7 +103,7 @@ def arch_from_vmlinux(vmlinux: ELF) -> Optional[Tuple[Type[Arch],bool,List[str]]
 	for klass in ARCH_CLASSES:
 		match = klass.match(vmlinux)
 		if match:
-			return match
+			return klass, *match
 
 	logging.fatal('Unknown or unsupported architecture: e_machine = %d, '
 		'e_flags = 0x%x', vmlinux.e_machine, vmlinux.e_flags)

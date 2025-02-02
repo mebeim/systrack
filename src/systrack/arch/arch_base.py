@@ -1,7 +1,7 @@
 import logging
 
 from abc import ABC, abstractmethod
-from typing import Tuple, List, Dict, Type, Optional
+from typing import Tuple, List, Dict, Optional
 
 from ..elf import Symbol, ELF
 from ..syscall import Syscall
@@ -70,14 +70,13 @@ class Arch(ABC):
 		return (f'{s.__class__.__name__}(name={s.name!r}, '
 			f'bits32={s.bits32}, abi={s.abi!r}, compat={s.compat!r}, ...)')
 
-	# TODO: don't make this return the class too, it's redundant
 	@staticmethod
 	@abstractmethod
-	def match(vmlinux: ELF) -> Optional[Tuple[Type['Arch'],bool,List[str]]]:
+	def match(vmlinux: ELF) -> Optional[Tuple[bool,List[str]]]:
 		'''Determine if the given vmlinux ELF was built for this architecture,
-		and if so return the class itself, the bitness and a list of detected
-		ABIs. This is useful to determine which Arch subclass to instantiate (if
-		any).
+		and if so return the bitness as boolean (True if 32-bit) and a list of
+		detected ABIs. This is useful to determine which Arch subclass to
+		instantiate (if any).
 		'''
 		pass
 

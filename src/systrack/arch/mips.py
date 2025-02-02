@@ -1,4 +1,4 @@
-from typing import Tuple, List, Type, Optional
+from typing import Tuple, List, Optional
 
 from ..elf import Symbol, ELF, E_MACHINE
 from ..kconfig_options import VERSION_ZERO, VERSION_INF
@@ -84,7 +84,7 @@ class ArchMips(Arch):
 			self.kconfig.add(VERSION_ZERO, VERSION_INF, 'MIPS32_N32=y', [])
 
 	@staticmethod
-	def match(vmlinux: ELF) -> Optional[Tuple[Type[Arch],bool,List[str]]]:
+	def match(vmlinux: ELF) -> Optional[Tuple[bool,List[str]]]:
 		if vmlinux.e_machine != E_MACHINE.EM_MIPS:
 			return None
 
@@ -98,7 +98,7 @@ class ArchMips(Arch):
 			if 'sysn32_call_table' in vmlinux.symbols:
 				abis.append('n32')
 
-		return ArchMips, vmlinux.bits32, abis
+		return vmlinux.bits32, abis
 
 	def matches(self, vmlinux: ELF) -> bool:
 		return (

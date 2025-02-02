@@ -1,4 +1,4 @@
-from typing import Tuple, List, Type, Optional
+from typing import Tuple, List, Optional
 
 from ..elf import Symbol, ELF, E_MACHINE, E_FLAGS
 from ..kconfig_options import VERSION_INF
@@ -58,7 +58,7 @@ class ArchArm(Arch):
 			self.kconfig.add((2,6,16), VERSION_INF, 'OABI_COMPAT=y', ['AEABI=y', 'THUMB2_KERNEL=n'])
 
 	@staticmethod
-	def match(vmlinux: ELF) -> Optional[Tuple[Type[Arch],bool,List[str]]]:
+	def match(vmlinux: ELF) -> Optional[Tuple[bool,List[str]]]:
 		if vmlinux.e_machine != E_MACHINE.EM_ARM:
 			return None
 
@@ -73,7 +73,7 @@ class ArchArm(Arch):
 				abis = ['eabi']
 			abis = ['oabi']
 
-		return ArchArm, True, abis
+		return True, abis
 
 	def matches(self, vmlinux: ELF) -> bool:
 		return vmlinux.bits32 and vmlinux.e_machine == E_MACHINE.EM_ARM
