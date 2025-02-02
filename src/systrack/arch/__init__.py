@@ -4,8 +4,20 @@ from typing import Optional, Type, Tuple, List
 from ..elf import ELF
 from ..type_hints import KernelVersion
 
-from .all import *
 from .arch_base import Arch
+from .arm import ArchArm
+from .arm64 import ArchArm64
+from .mips import ArchMips
+from .powerpc import ArchPowerPC
+from .x86 import ArchX86
+
+ARCH_CLASSES = (
+	ArchArm,
+	ArchArm64,
+	ArchMips,
+	ArchPowerPC,
+	ArchX86,
+)
 
 # NOTE: For the sake of mental sanity, try keeping abi= the same name as the one
 # in the *.tbl files in the kernel sources.
