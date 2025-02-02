@@ -66,4 +66,5 @@ class ArchArm64(Arch):
 
 	def _normalize_syscall_name(self, name: str) -> str:
 		# E.g. v5.18 COMPAT_SYSCALL_DEFINE6(aarch32_mmap2, ...)
-		return noprefix(name, 'aarch32_')
+		# E.g. v5.2-v6.13+ SYSCALL_DEFINE1(arm64_personality, ...)
+		return noprefix(name, 'aarch32_', 'arm64_')
