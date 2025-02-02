@@ -10,13 +10,13 @@ from ..utils import VersionedDict, anysuffix, noprefix, nosuffix
 
 class Arch(ABC):
 	# Directory name for this arch in the kernel source, under arch/
-	name: str = None
+	name: Optional[str] = None
 
 	# Whether this arch is 32-bits or not
 	bits32: bool = False
 
-	# Selected ABI
-	abi: str = None
+	# Selected ABI to inspect/build for
+	abi: Optional[str] = None
 
 	# Whether the selected ABI is 32-bits or not
 	abi_bits32: bool = False
@@ -30,7 +30,7 @@ class Arch(ABC):
 	compat: bool = False
 
 	# Kernel version that we are intersted in analyzing
-	kernel_version: KernelVersion = None
+	kernel_version: Optional[KernelVersion] = None
 
 	# Make targets to run (one by one in the specified order) to obtain the base
 	# config to build the kernel with
@@ -48,10 +48,10 @@ class Arch(ABC):
 	# Syscall number destination (register name, None if no register is used,
 	# e.g. arm/OABI where the instruction is swi <nr>). Subclasses must override
 	# this.
-	syscall_num_reg: str = None
+	syscall_num_reg: Optional[str] = None
 
 	# Registers for syscall arguments. Subclasses must override this.
-	syscall_arg_regs: Tuple[str, ...] = None
+	syscall_arg_regs: Optional[Tuple[str, ...]] = None
 
 	# Additional kconfig options to set
 	kconfig: VersionedDict = VersionedDict()
@@ -64,7 +64,7 @@ class Arch(ABC):
 	def __init__(self, kernel_version: KernelVersion, abi: str, bits32: bool):
 		self.kernel_version = kernel_version
 		self.bits32 = bits32
-		self.abi = abi # ABI to inspect/build for
+		self.abi = abi
 
 	def __repr__(s):
 		return (f'{s.__class__.__name__}(name={s.name!r}, '
