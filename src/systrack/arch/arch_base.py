@@ -67,7 +67,8 @@ class Arch(ABC):
 		self.abi = abi # ABI to inspect/build for
 
 	def __repr__(s):
-		return f'{s.__class__.__name__}(name={s.name!r}, abi={s.abi!r}, compat={s.compat!r}, ...)'
+		return (f'{s.__class__.__name__}(name={s.name!r}, '
+			f'bits32={s.bits32}, abi={s.abi!r}, compat={s.compat!r}, ...)')
 
 	# TODO: don't make this return the class too, it's redundant
 	@staticmethod
