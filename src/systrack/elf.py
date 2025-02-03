@@ -21,6 +21,7 @@ class E_MACHINE(IntEnum):
 	EM_ARM     = 40  # ARM 32-bit
 	EM_X86_64  = 62  # x86-64
 	EM_AARCH64 = 183 # ARM 64-bit
+	EM_RISCV   = 243 # RISC-V
 
 # Only EF_* macros that we actually use
 class E_FLAGS(IntEnum):
