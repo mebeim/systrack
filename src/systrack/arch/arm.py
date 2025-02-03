@@ -11,9 +11,7 @@ from .arch_base import Arch
 class ArchArm(Arch):
 	name             = 'arm'
 	bits32           = True
-	abi              = None # Chosen by .adjust_abi()
 	abi_bits32       = True
-	compat           = None # Chosen by .adjust_abi()
 	syscall_arg_regs = ('r0', 'r1', 'r2', 'r3', 'r4', 'r5', 'r6')
 
 	kconfig = VersionedDict((
