@@ -392,9 +392,6 @@ def extract_syscall_locations(syscalls: List[Syscall], vmlinux: ELF, arch: Arch,
 			invalid = False
 			line = adjust_line(file, int(line))
 
-			if sc.name == 'creat':
-				logging.critical('%s %d', file, line)
-
 			if good_location(file, line, arch, sc):
 				sc.file = file
 				sc.line = line
@@ -443,9 +440,6 @@ def extract_syscall_locations(syscalls: List[Syscall], vmlinux: ELF, arch: Arch,
 	# preprocessor (which we are not even going to bother trying).
 
 	# Sort by syscall name, group not found first
-	for x in to_grep:
-		logging.critical('%r', x)
-
 	grepped = grep_kernel_sources(kdir, arch, to_grep)
 	grepped = sorted(grepped, key=lambda x: (x[1] is not None, x[0].name))
 
