@@ -34,7 +34,7 @@ class Arch(ABC):
 
 	# Make targets to run (one by one in the specified order) to obtain the base
 	# config to build the kernel with
-	config_targets: Tuple[str] = ('defconfig',)
+	config_targets: Tuple[str,...] = ('defconfig',)
 
 	# Name of the syscall table symbol to look for
 	syscall_table_name: Optional[str] = 'sys_call_table'
@@ -207,12 +207,15 @@ class Arch(ABC):
 		# avoid it.
 		#name = nosuffix(name, '16')
 
-		# Some syscalls have a "_time64" or "_time32" suffix to distinguish
-		# whether they use 64-bit time structs (e.g. `struct __kernel_timespec`)
-		# or 32-bit time structs (e.g. `struct old_timespec32`). Sometimes the
-		# suffix is shortened to just "64" or "32" if the syscall name already
-		# ends in "time". This suffix is independent of the arch, so strip it
-		# regardless.
+		# Y2038 patches rename syscalls that deal with time adding a "_time64"
+		# or "_time32" suffix to distinguish whether they use 64-bit time
+		# structs (e.g. `struct __kernel_timespec`) or 32-bit time structs (e.g.
+		# `struct old_timespec32`). The suffix is shortened to just "64" or "32"
+		# if the syscall name already ends in "time". This suffix is independent
+		# of the arch, so strip it regardless.
+		#
+		# In v5.1 a bunch of 64-bit time syscalls were added to 32-bit archs
+		# with some exceptions (notably riscv).
 		#
 		#     SYSCALL_DEFINE5(recvmmsg_time32, ...) -> recvmmsg
 		#     SYSCALL_DEFINE2(clock_adjtime32, ...) -> clock_adjtime
@@ -268,11 +271,13 @@ class Arch(ABC):
 
 		# Cache ni_syscall code for speed as this function will definitely
 		# be called multiple times for the same ni_syscall.
-		if ni_code is not None and sc.symbol.size and vmlinux.read_symbol(sc.symbol) == ni_code:
-			logging.info('Syscall %s (%s) is not really implemented: '
-				'code matches %s', sc.name, sc.symbol.name,
-				ni_sym.name)
-			return True
+		if ni_code is not None:
+			code = vmlinux.vaddr_read(sc.symbol.real_vaddr, len(ni_code))
+			if code == ni_code:
+				logging.info('Syscall %s (%s) is not really implemented: '
+					'code matches %s', sc.name, sc.symbol.name,
+					ni_sym.name)
+				return True
 
 		code = self._dummy_syscall_code(sc, vmlinux)
 		if code is None:
