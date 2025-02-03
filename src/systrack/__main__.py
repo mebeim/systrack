@@ -148,11 +148,10 @@ def instantiate_kernel(*a, **kwa) -> Kernel:
 		sys.exit(1)
 	except KernelMultiABIError as e:
 		arch_class, abis = e.args[1:]
-		eprint(f'Detected architecture: {arch_class.name}.')
-		eprint(f'Detected ABIs: {", ".join(abis)}.')
+		eprint(f'Detected architecture: {arch_class.name}')
+		eprint(f'Detected ABIs: {", ".join(abis)}')
 		eprint('This kernel was built with support for multiple syscall ABIs.')
-		eprint('Select the correct one through --arch NAME.')
-		eprint(f"See '{sys.argv[0]} --arch help' for more information")
+		eprint('Select one using --arch NAME (see --arch HELP for more info).')
 		sys.exit(1)
 
 def main() -> int:
@@ -178,7 +177,7 @@ def main() -> int:
 
 	if not args.kdir and not args.vmlinux:
 		eprint('Need to specify a kernel source direcory and/or path to vmlinux')
-		eprint(f"See '{sys.argv[0]} --help' for more information")
+		eprint('See --help for more information')
 		return 1
 
 	if not args.kdir and (args.checkout or args.config or args.build):
@@ -187,7 +186,7 @@ def main() -> int:
 
 	if not arch_name and (args.config or args.build):
 		eprint('Need to specify an architecture/ABI combination (--arch)')
-		eprint(f"See '{sys.argv[0]} --arch help' for a list")
+		eprint('See --arch HELP for a list')
 		return 1
 
 	cross   = args.cross or ''
