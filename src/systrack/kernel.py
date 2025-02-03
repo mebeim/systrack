@@ -648,7 +648,7 @@ class Kernel:
 		self.__version = None
 
 		logging.info('Configuring for Arch: %r', self.arch)
-		logging.info('Base config target(s): %s', ','.join(self.arch.config_targets))
+		logging.info('Base config target(s): %s', ', '.join(self.arch.config_targets))
 
 		for target in self.arch.config_targets:
 			self.make(target)
