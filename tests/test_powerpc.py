@@ -4,14 +4,14 @@ from .utils import *
 
 
 def test_dummy_syscall_simple():
-	assert arch_is_dummy_syscall(ArchPowerPC((6,8), 'ppc64', False),
+	assert arch_is_dummy_syscall(ArchPowerPC((6,8), 'ppc64', False), True,
 		bytes.fromhex(
 			'38 60 ff da' # li      r3,-38
 			'4e 80 00 20' # blr
 		)
 	)
 
-	assert arch_is_dummy_syscall(ArchPowerPC((6,8), 'ppc32', True),
+	assert arch_is_dummy_syscall(ArchPowerPC((6,8), 'ppc32', True), True,
 		bytes.fromhex(
 			'94 21 ff f0' # stwu    r1,-16(r1)
 			'38 60 ff da' # li      r3,-38
@@ -20,7 +20,7 @@ def test_dummy_syscall_simple():
 		)
 	)
 
-	assert not arch_is_dummy_syscall(ArchPowerPC((6,8), 'ppc32', True),
+	assert not arch_is_dummy_syscall(ArchPowerPC((6,8), 'ppc32', True), True,
 		bytes.fromhex(
 			'94 21 ff f0' # stwu    r1,-16(r1)
 			'38 60 ff 00' # li      r3,-256
@@ -31,7 +31,7 @@ def test_dummy_syscall_simple():
 
 
 def test_dummy_syscall_64():
-	assert arch_is_dummy_syscall(ArchPowerPC((5,0), 'ppc64', False),
+	assert arch_is_dummy_syscall(ArchPowerPC((5,0), 'ppc64', False), True,
 		# <.sys_ni_syscall>: (64-bit, v5.0)
 		bytes.fromhex(
 			'7c 08 02 a6' # mflr    r0
@@ -51,7 +51,7 @@ def test_dummy_syscall_64():
 
 
 def test_dummy_syscall_32():
-	assert arch_is_dummy_syscall(ArchPowerPC((6,8), 'ppc32', True),
+	assert arch_is_dummy_syscall(ArchPowerPC((6,8), 'ppc32', True), True,
 		bytes.fromhex(
 			# <sys_migrate_pages>: (32-bit, v6.8)
 			'7c 08 02 a6' # mflr    r0

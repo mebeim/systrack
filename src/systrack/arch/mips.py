@@ -2,6 +2,7 @@ from typing import Tuple, List, Optional
 
 from ..elf import Symbol, ELF, E_MACHINE
 from ..kconfig_options import VERSION_ZERO, VERSION_INF
+from ..syscall import Syscall
 from ..type_hints import KernelVersion
 from ..utils import VersionedDict, anyprefix, noprefix
 
@@ -117,6 +118,36 @@ class ArchMips(Arch):
 		# E.G. v5.18 SYSCALL_DEFINE6(mips_mmap, ...)
 		# E.G. v5.0-6.13+ asmlinkage long mipsmt_sys_sched_setaffinity(...)
 		return noprefix(name, 'sysm_', 'mips_', 'mipsmt_sys_')
+
+	def _dummy_syscall_code(self, sc: Syscall, vmlinux: ELF) -> Optional[bytes]:
+		# Match the following code exactly with either -22 (EINVAL) or -89
+		# (-ENOSYS), which of course is different than normalon MIPS) as
+		# immediate for LI:
+		#
+		#     03e00008    jr  ra
+		#     2402ffa7    li  v0,-89
+		#
+		# Taken from __se_sys_cachectl on v6.9 64-bit ip27_defconfig.
+		#
+		if sc.symbol.size != 8:
+			return None
+
+		code = vmlinux.read_symbol(sc.symbol)
+
+		if vmlinux.big_endian:
+			if not code.startswith(b'\x03\xe0\x00\x08\x24\x02'):
+				return None
+
+			imm = int.from_bytes(code[6:], 'big', signed=True)
+		else:
+			if not (code.startswith(b'\x08\x00\xe0\x03') and code.endswith(b'\x02\x24')):
+				return None
+
+			imm = int.from_bytes(code[4:6], 'little', signed=True)
+
+		if imm == -22 or imm == -89:
+			return code
+		return None
 
 	def syscall_def_regexp(self, syscall_name: Optional[str]=None) -> Optional[str]:
 		# Absolutely insane old-style prefixes on MIPS...

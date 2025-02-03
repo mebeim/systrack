@@ -35,10 +35,10 @@ class MockELF:
 
 		return self.vaddr_read(sym.real_vaddr, sym.size)
 
-def arch_is_dummy_syscall(arch: Arch, code: bytes):
+def arch_is_dummy_syscall(arch: Arch,  big_endian: bool, code: bytes) -> bool:
 	sym = Symbol(0x0, 0x0, len(code), 'FUNC', 'test')
 	sc  = Syscall(0x0, 0x0, 'test', 'test', sym, None)
-	elf = MockELF(True, {sym: code})
+	elf = MockELF(big_endian, {sym: code})
 	return arch.is_dummy_syscall(sc, elf)
 
 def make_test_elf(name: str) -> Path:
