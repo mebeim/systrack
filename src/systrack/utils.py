@@ -3,10 +3,15 @@ import logging
 
 from collections import defaultdict
 from pathlib import Path
+from shlex import join as shlex_join, quote as shlex_quote
 from shutil import which
 from subprocess import Popen, DEVNULL, PIPE
 from textwrap import indent
-from typing import Union, Iterable, Tuple, Any, AnyStr, Hashable
+from typing import Union, Iterable, Tuple, Any, AnyStr, Hashable, Optional
+
+
+AnyStrOrPath = Union[AnyStr,Path]
+
 
 class VersionedDict:
 	'''A dict that can have multiple versions with different contents. Accessing
@@ -189,15 +194,34 @@ def do_popen(cmd: Union[AnyStr,Iterable[AnyStr]], cwd: Union[AnyStr,Path], **kwa
 
 	return None
 
-def run_command(cmd: Union[AnyStr,Iterable[AnyStr]], cwd: Union[AnyStr,Path] = None,
-		stdin: AnyStr = None, console_output: bool = False) -> int:
+def _cmd_to_string(cmd: Union[AnyStrOrPath,Iterable[AnyStrOrPath]]) -> str:
+	'''Convert the given command, which can be str, bytes, Path, or an iterable
+	containing any of those, to a shlex-escaped string.
+	'''
+	if not isinstance(cmd, Iterable):
+		return shlex_quote(str(cmd))
+
+	parts = []
+	for part in cmd:
+		if isinstance(part, Path):
+			parts.append(str(part))
+		elif isinstance(part, bytes):
+			parts.append(part.decode())
+		else:
+			parts.append(part)
+
+	return shlex_join(parts)
+
+def run_command(cmd: Union[AnyStrOrPath,Iterable[AnyStrOrPath]],
+		cwd: Optional[AnyStrOrPath]=None, stdin: Optional[AnyStr]=None,
+		console_output: bool=False) -> int:
 	'''Run the given command (cmd), optionally under the given working directory
 	(cwd), optionally passing the given data to standard input (stdin), and
 	optionally enabling console output. The returned value is the exit code of
 	the command.
 	'''
 	if HIGH_VERBOSITY:
-		logging.debug('Running command: %s', cmd)
+		logging.debug('Running command: %s', _cmd_to_string(cmd))
 
 	if console_output:
 		stdout, stderr = sys.stdout, sys.stderr
@@ -211,8 +235,9 @@ def run_command(cmd: Union[AnyStr,Iterable[AnyStr]], cwd: Union[AnyStr,Path] = N
 	child.communicate(stdin)
 	return child.returncode
 
-def ensure_command(cmd: Union[AnyStr,Iterable[AnyStr]], cwd: Union[AnyStr,Path] = None,
-		stdin: AnyStr = None, capture_stdout: bool = True, console_output: bool = False) -> AnyStr:
+def ensure_command(cmd: Union[AnyStrOrPath,Iterable[AnyStrOrPath]],
+		cwd: Optional[AnyStrOrPath]=None, stdin: Optional[AnyStr]=None,
+		capture_stdout: bool=True, console_output: bool=False) -> AnyStr:
 	'''Run the given command (cmd), optionally under the given working directory
 	(cwd), optionally passing the given data to standard input (stdin),
 	capturing and returning its standard output (if capture_stdout=True) and
@@ -226,7 +251,7 @@ def ensure_command(cmd: Union[AnyStr,Iterable[AnyStr]], cwd: Union[AnyStr,Path] 
 	assert not console_output or not capture_stdout
 
 	if HIGH_VERBOSITY:
-		logging.debug('Running command: %s', cmd)
+		logging.debug('Running command: %s', _cmd_to_string(cmd))
 
 	if console_output:
 		stdout, stderr = sys.stdout, sys.stderr
