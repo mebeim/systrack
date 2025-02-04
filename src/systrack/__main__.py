@@ -5,6 +5,7 @@ import signal
 import sys
 
 from pathlib import Path
+from shlex import join as shlex_join
 from textwrap import TextWrapper
 
 from .arch import SUPPORTED_ARCHS, SUPPORTED_ARCHS_HELP
@@ -13,7 +14,7 @@ from .kernel import KernelWithoutSymbolsError, KernelMultiABIError
 from .output import output_syscalls
 from .utils import eprint, enable_high_verbosity, enable_silent, command_available
 from .utils import gcc_version, git_checkout, maybe_rel, format_duration
-from .version import VERSION_HELP
+from .version import VERSION, VERSION_HELP
 
 def sigint_handler(_, __):
 	sys.stderr.write('Caught SIGINT, stopping\n')
@@ -159,7 +160,9 @@ def main() -> int:
 
 	args = parse_args()
 	setup_logging(args.quiet, args.verbose, os.isatty(sys.stderr.fileno()))
-	logging.debug('Command line arguments: %r', sys.argv[1:])
+
+	logging.debug('Systrack v%s', VERSION)
+	logging.debug('Command line args: %s', shlex_join(sys.argv[1:]))
 
 	arch_name = args.arch
 
