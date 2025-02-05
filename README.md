@@ -40,7 +40,7 @@ Usage
 -----
 
 Systrack can mainly be used for two purposes: analyzing or building Linux
-kernels. For more information, see [`systrack --help`](#command-line-help). For
+kernels. For usage information, see [`systrack --help`](#command-line-help). For
 information about supported architecture/ABI combinations, see
 [`systrack --arch help`](#archabi-selection-help).
 
@@ -49,12 +49,12 @@ information about supported architecture/ABI combinations, see
   extract information about implemented syscalls from the symbol table present
   in the given `vmlinux` ELF, and if debugging information is present, it will
   also extract file and line number information for syscall definitions.
-  Supplying `--kdir` will help refine and/or correct the location of the
-  definitions, pointing Systrack to the checked-out sources for the right kernel
-  version (the same as the one to analyze).
+  Supplying a `--kdir` pointing Systrack to the checked-out sources for the
+  right kernel version (the same as the one to analyze) will help refine and/or
+  correct the location of the definitions.
 
   Systrack can guess the architecture and ABI to analyze, but if the given
-  kernel was built for support for multiple ABIs, the right one can be selected
+  kernel was built with support for multiple ABIs, the right one can be selected
   through `--arch`.
 
   ```none
@@ -70,15 +70,17 @@ information about supported architecture/ABI combinations, see
   combination to build for (`--arch`).
 
   ```none
-  systrack --build --kdir path/to/linux_git_repo --arch x86-64
+  systrack --build --kdir path/to/linux_source_dir --arch x86-64
   ```
 
-  Cross-compilation is possible specifying the correct toolchain prefix with
-  the `--cross` option, which will set the `CROSS_COMPILE` variable for the
-  kernel's `Makefile`.
+  Cross-compilation with GCC is possible specifying the correct toolchain prefix
+  with the `--cross` option, which will set the `CROSS_COMPILE` variable for the
+  kernel's `Makefile`. Other environment variables can also be used as usual and
+  are passed as is to `make`, so LLVM [cross]-compilation and custom toolchain
+  usage is also possible.
 
   ```none
-  systrack --build --kdir path/to/linux_git_repo --arch arm64 --cross aarch64-linux-gnu-
+  systrack --build --kdir path/to/linux_source --arch arm64 --cross aarch64-linux-gnu-
   ```
 
 Runtime dependencies
@@ -171,42 +173,49 @@ options:
 Arch/ABI selection help
 -----------------------
 
-```none
-$ systrack-dev --arch help
+Here's a list of supported arch/ABI combinations accepted via `--arch` (values
+are case-insensitive). This information is also available via `systrack --arch
+help`.
 
-Supported architectures and ABIs (values are case-insensitive):
+| Value           | Aliases            | Arch    | Kernel | Syscall ABI    | Build based on                | Notes   |
+|:----------------|:-------------------|:--------|:-------|:---------------|:------------------------------|:--------|
+| `arm`           | `arm-eabi`, `eabi` | ARM     | 32-bit | 32-bit EABI    | `multi_v7_defconfig`          | *[2]*   |
+| `arm-oabi`      | `oabi`             | ARM     | 32-bit | 32-bit OABI    | `multi_v7_defconfig`          | *[2,4]* |
+| `arm64`         | `aarch64`          | ARM     | 64-bit | 64-bit AArch64 | `defconfig`                   |         |
+| `arm64-aarch32` | `aarch32`          | ARM     | 64-bit | 32-bit AArch32 | `defconfig`                   | *[1]*   |
+| `mips`          | `mips32`, `o32`    | MIPS    | 32-bit | 32-bit O32     | `defconfig`                   |         |
+| `mips64`        | `n64`              | MIPS    | 64-bit | 64-bit N64     | `ip27_defconfig`              | *[1]*   |
+| `mips64-n32`    | `n32`              | MIPS    | 64-bit | 64-bit N32     | `ip27_defconfig`              | *[1]*   |
+| `mips64-o32`    | `o32-64`           | MIPS    | 64-bit | 32-bit O32     | `ip27_defconfig`              | *[1]*   |
+| `powerpc`       | `ppc`, `ppc32`     | PowerPC | 32-bit | 32-bit PPC32   | `ppc64_defconfig`             |         |
+| `powerpc64`     | `ppc64`            | PowerPC | 64-bit | 64-bit PPC64   | `ppc64_defconfig`             | *[1]*   |
+| `powerpc64-32`  | `ppc64-32`         | PowerPC | 64-bit | 32-bit PPC32   | `ppc64_defconfig`             | *[1]*   |
+| `powerpc64-spu` | `ppc64-spu`, `spu` | PowerPC | 64-bit | 64-bit "SPU"   | `ppc64_defconfig`             | *[1,5]* |
+| `riscv`         | `riscv32`, `rv32`  | RISC-V  | 32-bit | 32-bit "RV32"  | `defconfig` + `32-bit.config` | *[3,6]* |
+| `riscv64`       | `rv64`             | RISC-V  | 64-bit | 64-bit "RV64"  | `defconfig`                   | *[1,6]* |
+| `riscv64-32`    | `rv64-32`          | RISC-V  | 64-bit | 32-bit "RV32"  | `defconfig`                   | *[1,6]* |
+| `x86`           | `i386`, `ia32`     | x86     | 32-bit | 32-bit IA32    | `i386_defconfig`              |         |
+| `x86-64`        | `x64`              | x86     | 64-bit | 64-bit x86-64  | `x86_64_defconfig`            | *[1]*   |
+| `x86-64-x32`    | `x32`              | x86     | 64-bit | 64-bit x32     | `x86_64_defconfig`            | *[1]*   |
+| `x86-64-ia32`   | `ia32-64`          | x86     | 64-bit | 32-bit IA32    | `x86_64_defconfig`            | *[1]*   |
 
-    Value          Aliases         Arch     Kernel  ABI             Build based on      Notes
-    -----------------------------------------------------------------------------------------
-    x86            i386, ia32      x86      32-bit  32-bit IA32     i386_defconfig
-    x86-64         x64             x86      64-bit  64-bit x86-64   x86_64_defconfig    [1]
-    x86-64-x32     x32             x86      64-bit  64-bit x32      x86_64_defconfig    [1]
-    x86-64-ia32    ia32-64         x86      64-bit  32-bit IA32     x86_64_defconfig    [1]
-    -----------------------------------------------------------------------------------------
-    arm            arm-eabi, eabi  ARM      32-bit  32-bit EABI     multi_v7_defconfig  [2]
-    arm-oabi       oabi            ARM      32-bit  32-bit OABI     multi_v7_defconfig  [2,3]
-    -----------------------------------------------------------------------------------------
-    arm64          aarch64         ARM      64-bit  64-bit AArch64  defconfig
-    arm64-aarch32  aarch32         ARM      64-bit  32-bit AArch32  defconfig           [4]
-    -----------------------------------------------------------------------------------------
-    mips           mips32, o32     MIPS     32-bit  32-bit O32      defconfig
-    mips64         n64             MIPS     64-bit  64-bit N64      ip27_defconfig      [1]
-    mips64-n32     n32             MIPS     64-bit  64-bit N32      ip27_defconfig      [1]
-    mips64-o32     o32-64          MIPS     64-bit  32-bit O32      ip27_defconfig      [1]
-    -----------------------------------------------------------------------------------------
-    powerpc        ppc, ppc32      PowerPC  32-bit  32-bit PPC32    ppc64_defconfig
-    powerpc64      ppc64           PowerPC  64-bit  64-bit PPC64    ppc64_defconfig     [1]
-    powerpc64-32   ppc64-32        PowerPC  64-bit  32-bit PPC32    ppc64_defconfig     [1]
-    powerpc64-spu  ppc64-spu, spu  PowerPC  64-bit  64-bit "SPU"    ppc64_defconfig     [1,5]
-
-    [1] Building creates a kernel supporting all ABIs for this architecture.
-    [2] Building for Linux <= v3.7 will use "defconfig" instead.
-    [3] Building creates an EABI kernel with compat OABI support. Building an OABI-only
-        kernel is NOT supported. The seccomp filter system will be missing.
-    [4] AArch64 kernel with compat AArch32 support.
-    [5] "SPU" is not a real ABI. It indicates a Cell processor SPU (Synergistic Processing
-        Unit). The ABI is really PPC64, but SPUs can only use a subset of syscalls.
-```
+***[1]*** Building creates a kernel supporting all ABIs for this architecture.
+<br>
+***[2]*** Build based on `defconfig` for Linux <= v3.7.
+<br>
+***[3]*** Build based on `rv32_defconfig` for Linux <= v6.7 and `defconfig` for
+Linux <= v5.0.
+<br>
+***[4]*** Building creates an EABI kernel with compat OABI support. Building an
+OABI-only kernel is NOT supported. The seccomp filter system will be missing.
+<br>
+***[5]*** "SPU" is not a real ABI. It indicates a Cell processor SPU (Synergistic
+Processing Unit). The ABI is really PPC64, but SPUs can only use a subset of
+syscalls.
+<br>
+***[6]*** "RV32" and "RV64" are not real ABIs, but rather ISAs. The RISC-V syscall
+ABI is the same for 32-bit and 64-bit (only register size differs). These names
+are only used for clarity.
 
 ---
 
