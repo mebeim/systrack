@@ -2,6 +2,33 @@ Systrack changelog
 ==================
 
 
+v0.7
+----
+
+New arch support: RISC-V 32-bit and 64-bit, tested on v4.15+ kernels (i.e.,
+since the first Linux version supporting RISC-V).
+
+**Improvements**:
+
+- Improve dummy syscall implementation detection: try to first match known
+  "ni_syscall" code.
+- Improve error messages and debug/info logs, pretty printing command-line
+  arguments and executed commands instead of dumping their tuple/list
+  representation.
+- mips: implement simple arch-specific dummy syscall detection.
+- arm64: remove "arm64_" arch-specific prefix from syscall names.
+
+**Bug fixes**:
+
+- mips: new dummy syscall detection now correctly identifies some dummy syscalls
+  that were previously missed (notably `cachestat`).
+
+**Internal changes**:
+
+- Archs can now specify multiple kernel Makefile config targets to run one after
+  the other as a "base" config.
+
+
 v0.6
 ----
 
