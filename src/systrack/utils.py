@@ -194,7 +194,7 @@ def do_popen(cmd: Union[AnyStr,Iterable[AnyStr]], cwd: Union[AnyStr,Path], **kwa
 
 	return None
 
-def _cmd_to_string(cmd: Union[AnyStrOrPath,Iterable[AnyStrOrPath]]) -> str:
+def command_argv_to_string(cmd: Union[AnyStrOrPath,Iterable[AnyStrOrPath]]) -> str:
 	'''Convert the given command, which can be str, bytes, Path, or an iterable
 	containing any of those, to a shlex-escaped string.
 	'''
@@ -221,7 +221,7 @@ def run_command(cmd: Union[AnyStrOrPath,Iterable[AnyStrOrPath]],
 	the command.
 	'''
 	if HIGH_VERBOSITY:
-		logging.debug('Running command: %s', _cmd_to_string(cmd))
+		logging.debug('Running command: %s', command_argv_to_string(cmd))
 
 	if console_output:
 		stdout, stderr = sys.stdout, sys.stderr
@@ -251,7 +251,7 @@ def ensure_command(cmd: Union[AnyStrOrPath,Iterable[AnyStrOrPath]],
 	assert not console_output or not capture_stdout
 
 	if HIGH_VERBOSITY:
-		logging.debug('Running command: %s', _cmd_to_string(cmd))
+		logging.debug('Running command: %s', command_argv_to_string(cmd))
 
 	if console_output:
 		stdout, stderr = sys.stdout, sys.stderr

@@ -5,14 +5,14 @@ import signal
 import sys
 
 from pathlib import Path
-from shlex import join as shlex_join
 from textwrap import TextWrapper
 
 from .arch import SUPPORTED_ARCHS, SUPPORTED_ARCHS_HELP
 from .kernel import Kernel, KernelVersionError, KernelArchError
 from .kernel import KernelWithoutSymbolsError, KernelMultiABIError
 from .output import output_syscalls
-from .utils import eprint, enable_high_verbosity, enable_silent, command_available
+from .utils import command_argv_to_string, command_available
+from .utils import eprint, enable_high_verbosity, enable_silent
 from .utils import gcc_version, git_checkout, maybe_rel, format_duration
 from .version import VERSION, VERSION_HELP
 
@@ -162,7 +162,7 @@ def main() -> int:
 	setup_logging(args.quiet, args.verbose, os.isatty(sys.stderr.fileno()))
 
 	logging.debug('Systrack v%s', VERSION)
-	logging.debug('Command line args: %s', shlex_join(sys.argv[1:]))
+	logging.debug('Command line: systrack %s', command_argv_to_string(sys.argv[1:]))
 
 	arch_name = args.arch
 
@@ -172,7 +172,7 @@ def main() -> int:
 		if arch_name not in SUPPORTED_ARCHS:
 			if arch_name not in ('help', '?'):
 				eprint(f'Unsupported architecture/ABI combination: {arch_name}')
-				eprint(f"See '{sys.argv[0]} --arch help' for a list")
+				eprint('See --arch HELP for a list')
 				return 1
 
 			eprint(SUPPORTED_ARCHS_HELP)
