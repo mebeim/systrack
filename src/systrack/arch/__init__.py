@@ -108,7 +108,7 @@ Supported architectures and ABIs (values are case-insensitive):
 
     [1] Building creates a kernel supporting all ABIs for this architecture.
     [2] Build based on "defconfig" for Linux <= v3.7.
-    [3] Build based on "rv32_defconfig" Linux <= v6.7 and "defconfig" for Linux <= v5.0.
+    [3] Build based on "rv32_defconfig" for Linux <= v6.7 and "defconfig" for Linux <= v5.0.
     [4] Building creates an EABI kernel with compat OABI support. Building an OABI-only kernel is
         NOT supported. The seccomp filter system will be missing.
     [5] "SPU" is not a real ABI. It indicates a Cell processor SPU (Synergistic Processing Unit).
