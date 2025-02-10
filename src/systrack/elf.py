@@ -18,6 +18,7 @@ class E_MACHINE(IntEnum):
 	EM_MIPS    = 8   # MIPS R3000 (32 or 64 bit)
 	EM_PPC     = 20  # PowerPC 32-bit
 	EM_PPC64   = 21	 # PowerPC 64-bit
+	EM_S390    = 22  # IBM S/390
 	EM_ARM     = 40  # ARM 32-bit
 	EM_X86_64  = 62  # x86-64
 	EM_AARCH64 = 183 # ARM 64-bit

@@ -406,7 +406,8 @@ def extract_syscall_locations(syscalls: List[Syscall], vmlinux: ELF, arch: Arch,
 					'%s:%s', sc.origname, sc.symbol.name, *loc)
 			else:
 				logging.debug('Location needs grepping (bad): %s (%s) -> %s:%d',
-					sc.origname, sc.symbol.name, rel(file), line)
+					sc.origname, sc.symbol.name, rel(file),
+					-1 if line is None else line)
 
 			to_grep.append(sc)
 

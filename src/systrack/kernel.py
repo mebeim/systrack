@@ -305,7 +305,7 @@ class Kernel:
 		self.arch.adjust_abi(self.vmlinux)
 		logging.debug('Arch: %r', self.arch)
 
-		have_syscall_table = self.arch.syscall_table_name is not None
+		have_syscall_table = self.arch.have_syscall_table()
 
 		if have_syscall_table:
 			vaddrs = self.__syscall_vaddrs_from_syscall_table()
@@ -622,6 +622,9 @@ class Kernel:
 			cmd += [f'CROSS_COMPILE={self.toolchain_prefix}']
 		if self.outdir:
 			cmd += [f'O={self.outdir}']
+
+		# Tools are compiled with -Werror by default.
+		cmd += ['WERROR=0']
 
 		if ensure:
 			ensure_command(cmd + [target], self.kdir, stdin, False, high_verbosity())

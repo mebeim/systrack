@@ -113,6 +113,8 @@ are case-insensitive). This information is also available running
 | `riscv`         | `riscv32`, `rv32`  | RISC-V  | 32-bit | 32-bit "RV32"  | `defconfig` + `32-bit.config` | *[3,6]* |
 | `riscv64`       | `rv64`             | RISC-V  | 64-bit | 64-bit "RV64"  | `defconfig`                   | *[1,6]* |
 | `riscv64-32`    | `rv64-32`          | RISC-V  | 64-bit | 32-bit "RV32"  | `defconfig`                   | *[1,6]* |
+| `s390x`         |                    | IBM Z   | 64-bit | 64-bit s390x   | `defconfig`                   | *[1]*   |
+| `s390`          |                    | IBM Z   | 64-bit | 32-bit s390    | `defconfig`                   | *[1]*   |
 | `x86`           | `i386`, `ia32`     | x86     | 32-bit | 32-bit IA32    | `i386_defconfig`              |         |
 | `x86-64`        | `x64`              | x86     | 64-bit | 64-bit x86-64  | `x86_64_defconfig`            | *[1]*   |
 | `x86-64-x32`    | `x32`              | x86     | 64-bit | 64-bit x32     | `x86_64_defconfig`            | *[1]*   |

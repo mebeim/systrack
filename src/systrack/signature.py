@@ -46,7 +46,7 @@ def syscall_signature_from_source(file: Path, line: int, big_endian: bool) -> Tu
 			next(f)
 
 		sig = f.readline().strip()
-		while not sig.endswith(')'):
+		while len(sig) == 0 or sig[-1] not in ');':
 			sig += f.readline().strip()
 
 	# We only handle two scenarios here:
@@ -56,7 +56,7 @@ def syscall_signature_from_source(file: Path, line: int, big_endian: bool) -> Tu
 
 	newsig = noprefix(sig, 'SYSCALL_DEFINE', 'SYSCALL32_DEFINE',
 		'COMPAT_SYSCALL_DEFINE', 'COMPAT_SYSCALL32_DEFINE',
-		'PPC32_SYSCALL_DEFINE')
+		'PPC32_SYSCALL_DEFINE', 'COMPAT_SYSCALL_WRAP')
 
 	if sig != newsig:
 		sig = newsig

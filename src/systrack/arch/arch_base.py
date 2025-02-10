@@ -294,6 +294,11 @@ class Arch(ABC):
 		'''
 		return number
 
+	def have_syscall_table(self) -> bool:
+		'''Return whether the standard method of extracting virtual addresses
+		of syscall functions works.'''
+		return self.arch.syscall_table_name is not None
+
 	def extract_syscall_vaddrs(self, vmlinux: ELF) -> Dict[int,int]:
 		'''Extract virtual addresses of syscall functions. Implemented in case
 		this isn't just as simple as looking at the addresses in the syscall
