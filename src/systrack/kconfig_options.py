@@ -81,6 +81,7 @@ KCONFIG_COMPATIBILITY = VersionedList((
 	((4,6)       , VERSION_INF, ['STACK_VALIDATION=n']),
 	((4,14)      , (4,15)     , ['GUESS_UNWINDER=y', 'ORC_UNWINDER=n', 'FRAME_POINTER_UNWINDER=n']),
 	((4,15)      , VERSION_INF, ['UNWINDER_GUESS=y', 'UNWINDER_ORC=n', 'UNWINDER_FRAME_POINTER=n']),
+	((5,2)       , VERSION_INF, ['DEBUG_INFO_BTF=n']),
 ))
 
 # Kconfig options to enable optional syscalls. We want to build a kernel with as
