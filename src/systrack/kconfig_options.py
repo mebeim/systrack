@@ -369,5 +369,4 @@ KCONFIG_SYSCALL_DEPS = VersionedDict((
 	((4,3)       , VERSION_INF, 'vm86'                   , 'X86_LEGACY_VM86'                 ), # x86 32-bit only, legacy
 	((5,5)       , VERSION_INF, 'ioperm'                 , 'X86_IOPL_IOPERM'                 ), # x86 only
 	((5,5)       , VERSION_INF, 'iopl'                   , 'X86_IOPL_IOPERM'                 ), # x86 only
-	((6,6)       , VERSION_INF, 'map_shadow_stack'       , 'X86_USER_SHADOW_STACK'           ), # x86 64-bit only
 ))

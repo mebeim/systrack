@@ -35,9 +35,10 @@ class ArchX86(Arch):
 	))
 
 	kconfig_syscall_deps = VersionedDict((
-		(VERSION_ZERO, VERSION_INF, 'pkey_alloc'   , 'X86_INTEL_MEMORY_PROTECTION_KEYS'),
-		(VERSION_ZERO, VERSION_INF, 'pkey_free'    , 'X86_INTEL_MEMORY_PROTECTION_KEYS'),
-		(VERSION_ZERO, VERSION_INF, 'pkey_mprotect', 'X86_INTEL_MEMORY_PROTECTION_KEYS'),
+		(VERSION_ZERO, VERSION_INF, 'map_shadow_stack', 'X86_USER_SHADOW_STACK'           ),
+		(VERSION_ZERO, VERSION_INF, 'pkey_alloc'      , 'X86_INTEL_MEMORY_PROTECTION_KEYS'),
+		(VERSION_ZERO, VERSION_INF, 'pkey_free'       , 'X86_INTEL_MEMORY_PROTECTION_KEYS'),
+		(VERSION_ZERO, VERSION_INF, 'pkey_mprotect'   , 'X86_INTEL_MEMORY_PROTECTION_KEYS'),
 	))
 
 	# Numbers marked as "64" in syscall_64.tbl before v5.4 (when x64 and x32

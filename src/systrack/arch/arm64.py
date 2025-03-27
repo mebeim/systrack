@@ -23,6 +23,12 @@ class ArchArm64(Arch):
 		((3,19), (5,10)     , 'SECCOMP=y'   , []),
 		# mbind, migrate_pages, {get,set}_mempolicy
 		((4,7) , VERSION_INF, 'NUMA=y'      , []),
+		# map_shadow_stack
+		((6,13), VERSION_INF, 'ARM64_GCS=y' , ['UPROBES=n']),
+	))
+
+	kconfig_syscall_deps = VersionedDict((
+		((6,13), VERSION_INF, 'map_shadow_stack', 'ARM64_GCS'),
 	))
 
 	def __init__(self, kernel_version: KernelVersion, abi: str, bits32: bool = False):
