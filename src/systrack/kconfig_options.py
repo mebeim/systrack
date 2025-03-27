@@ -165,9 +165,10 @@ KCONFIG_MORE_SYSCALLS = VersionedDict((
 
 # Keep track of which syscall depends on which config option. Since syscalls are
 # uniquely named there is no issue in keeping track of arch-specific syscalls
-# here too. HOWEVER, for syscalls that are present on multiple archs but behind
-# different configs, rely on the .kconfig_syscall_deps attr of Arch subclasses
-# instead.
+# here too.
+#
+# NOTE: for syscalls that are gated behind different configs depending on arch,
+# the .kconfig_syscall_deps attr of Arch subclasses overrides the entries here.
 #
 # This info is only to give a richer output (namely list the kconfig options
 # needed to enable a certain syscall), it is not functional to the tool.
@@ -243,8 +244,11 @@ KCONFIG_SYSCALL_DEPS = VersionedDict((
 	(VERSION_ZERO, VERSION_INF, 'msync'                  , 'MMU'                             ),
 	(VERSION_ZERO, VERSION_INF, 'munlock'                , 'MMU'                             ),
 	(VERSION_ZERO, VERSION_INF, 'munlockall'             , 'MMU'                             ),
-	(VERSION_ZERO, VERSION_INF, 'remap_file_pages'       , 'MMU'                             ),
+	(VERSION_ZERO, VERSION_INF, 'pkey_alloc'             , 'MMU'                             ),
+	(VERSION_ZERO, VERSION_INF, 'pkey_free'              , 'MMU'                             ),
+	(VERSION_ZERO, VERSION_INF, 'pkey_mprotect'          , 'MMU'                             ),
 	(VERSION_ZERO, VERSION_INF, 'process_mrelease'       , 'MMU'                             ),
+	(VERSION_ZERO, VERSION_INF, 'remap_file_pages'       , 'MMU'                             ), # obsolete
 	((4,3)       , VERSION_INF, 'modify_ldt'             , 'MODIFY_LDT_SYSCALL'              ), # x86 only
 	(VERSION_ZERO, VERSION_INF, 'delete_module'          , 'MODULE_UNLOAD'                   ),
 	(VERSION_ZERO, VERSION_INF, 'init_module'            , 'MODULES'                         ),
