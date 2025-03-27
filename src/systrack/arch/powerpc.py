@@ -42,6 +42,8 @@ class ArchPowerPC(Arch):
 		((2,6,15)    , (5,10)     , 'SECCOMP=y', ['PROC_FS=y']),
 		# rtas
 		((2,6,15)    , VERSION_INF, 'PPC_RTAS=y', []),
+		# pkey syscalls, technically defaults to =y
+		((4,16)      , VERSION_INF, 'PPC_MEM_KEYS=y', ['PPC_BOOK3S_64=y', 'PPC_64S_HASH_MMU=y']),
 	))
 
 	# FIXME: more like a curiosity, but why the hell do migrate_pages and
