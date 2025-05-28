@@ -127,7 +127,7 @@ class ArchArm(Arch):
 			return code
 		return None
 
-	def extract_esoteric_syscalls(self, vmlinux: ELF) -> EsotericSyscall:
+	def extract_esoteric_syscalls(self, vmlinux: ELF) -> List[EsotericSyscall]:
 		# ARM-specific syscalls that are outside the syscall table, with numbers
 		# in the range 0x0f0000-0x0fffff for EABI and 0x9f0000-0x9fffff for
 		# OABI. These are all implemented in arm_syscall()

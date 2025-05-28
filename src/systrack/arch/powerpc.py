@@ -276,7 +276,7 @@ class ArchPowerPC(Arch):
 		# See comment in skip_syscall() above.
 		return number // 2
 
-	def extract_esoteric_syscalls(self, vmlinux: ELF) -> EsotericSyscall:
+	def extract_esoteric_syscalls(self, vmlinux: ELF) -> List[EsotericSyscall]:
 		# This is currently only used for fast switch_endian, which is only
 		# implemented for ppc64 and was killed in v6.12. Save some time here.
 		if self.abi != 'ppc64' or self.kernel_version >= (6,12):

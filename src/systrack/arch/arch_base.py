@@ -307,7 +307,7 @@ class Arch(ABC):
 		logging.error("Sorry, don't know how to extract syscall vaddrs for this arch!")
 		return {}
 
-	def extract_esoteric_syscalls(self, vmlinux: ELF) -> EsotericSyscall:
+	def extract_esoteric_syscalls(self, vmlinux: ELF) -> List[EsotericSyscall]:
 		'''Extract weird arch-specific syscalls not in the syscall table: there
 		isn't much else to do except either manually list these (if they are
 		always present) or perform static binary analysis.
