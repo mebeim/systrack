@@ -1,6 +1,4 @@
-import logging
 import re
-import sys
 
 from enum import IntEnum
 from functools import lru_cache
@@ -60,23 +58,21 @@ class ELF:
 		magic, ei_class, ei_data = unpack('<4sBB', self.file.read(6))
 
 		if magic != b'\x7fELF':
-			logging.warning('Bad ELF magic: %r', magic)
+			raise ValueError(f'Invalid ELF magic: {magic!r}')
 
 		if ei_class == 1:
 			self.bits32 = True
 		elif ei_class == 2:
 			self.bits32 = False
 		else:
-			logging.critical('Invalid ELF e_ident[EI_CLASS] = %d', ei_data)
-			sys.exit(1)
+			raise ValueError(f'Invalid ELF e_ident[EI_CLASS]: {ei_class}')
 
 		if ei_data == 1:
 			self.big_endian = False
 		elif ei_data == 2:
 			self.big_endian = True
 		else:
-			logging.critical('Invalid ELF e_ident[EI_DATA] = %d', ei_data)
-			sys.exit(1)
+			raise ValueError(f'Invalid ELF e_ident[EI_DATA]: {ei_data}')
 
 		unpack_endian = '<>'[self.big_endian]
 

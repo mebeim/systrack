@@ -21,16 +21,22 @@ from .type_hints import KernelVersion
 from .utils import run_command, ensure_command, high_verbosity
 from .utils import maybe_rel, noprefix
 
-class KernelVersionError(RuntimeError):
+class KernelError(RuntimeError):
 	pass
 
-class KernelArchError(RuntimeError):
+class KernelArchError(KernelError):
 	pass
 
-class KernelWithoutSymbolsError(RuntimeError):
+class KernelELFError(KernelError):
 	pass
 
-class KernelMultiABIError(RuntimeError):
+class KernelMultiABIError(KernelError):
+	pass
+
+class KernelVersionError(KernelError):
+	pass
+
+class KernelWithoutSymbolsError(KernelError):
 	pass
 
 class Kernel:
@@ -50,10 +56,17 @@ class Kernel:
 		if arch_name is None and vmlinux is None:
 			raise ValueError('need vmlinux to determine arch if not supplied')
 
+		if vmlinux:
+			try:
+				self.vmlinux = ELF(vmlinux)
+			except ValueError as e:
+				raise KernelELFError(f'Bad vmlinux ELF: {e}') from e
+		else:
+			self.vmlinux = None
+
 		self.kdir             = kdir
 		self.outdir           = outdir
 		self.rdir             = rdir
-		self.vmlinux          = ELF(vmlinux) if vmlinux else None
 		self.arch_name        = arch_name
 		self.toolchain_prefix = toolchain_prefix
 

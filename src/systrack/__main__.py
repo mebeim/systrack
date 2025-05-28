@@ -8,8 +8,8 @@ from pathlib import Path
 from textwrap import TextWrapper
 
 from .arch import SUPPORTED_ARCHS, SUPPORTED_ARCHS_HELP
-from .kernel import Kernel, KernelVersionError, KernelArchError
-from .kernel import KernelWithoutSymbolsError, KernelMultiABIError
+from .kernel import Kernel, KernelError, KernelArchError, KernelMultiABIError
+from .kernel import KernelVersionError, KernelWithoutSymbolsError
 from .output import output_syscalls
 from .utils import command_argv_to_string, command_available
 from .utils import eprint, enable_high_verbosity, enable_silent
@@ -135,24 +135,29 @@ def instantiate_kernel(*a, **kwa) -> Kernel:
 	'''
 	try:
 		return Kernel(*a, **kwa)
-	except KernelVersionError:
-		eprint('Unable to determine kernel version!')
-		eprint('Did you specify a valid kernel source directory (--kdir) or vmlinux path?')
-		sys.exit(1)
 	except KernelArchError as e:
 		eprint(str(e))
-		eprint(f"See '{sys.argv[0]} --arch help' for more information")
-		sys.exit(1)
-	except KernelWithoutSymbolsError:
-		eprint('The provided kernel image has no symbols, which are necessary for Systrack to work.')
-		eprint('You can try unstripping the image with tools such as "vmlinux-to-elf".')
-		sys.exit(1)
+		sys.exit(f"See '{sys.argv[0]} --arch help' for more information")
 	except KernelMultiABIError as e:
 		arch_class, abis = e.args[1:]
-		eprint(f'Detected architecture: {arch_class.name}')
-		eprint(f'Detected ABIs: {", ".join(abis)}')
-		eprint('This kernel was built with support for multiple syscall ABIs.')
-		eprint('Select one using --arch NAME (see --arch HELP for more info).')
+		sys.exit(
+			f'Detected architecture: {arch_class.name}\n'
+			f'Detected ABIs: {", ".join(abis)}\n'
+			'This kernel was built with support for multiple syscall ABIs.\n'
+			'Select one using --arch NAME (see --arch HELP for more info).'
+		)
+	except KernelVersionError:
+		sys.exit(
+			'Unable to determine kernel version!\n',
+			'Did you specify a valid kernel source directory (--kdir) or vmlinux path?'
+		)
+	except KernelWithoutSymbolsError:
+		sys.exit(
+			'The provided kernel image has no symbols, which are necessary for Systrack to work.\n',
+			'You can try unstripping the image with tools such as "vmlinux-to-elf".'
+		)
+	except KernelError as e:
+		eprint(str(e))
 		sys.exit(1)
 
 def main() -> int:
