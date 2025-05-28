@@ -192,7 +192,7 @@ class ArchX86(Arch):
 	__is_x64_name  = staticmethod(lambda n: n.startswith('__x64_'))  # __x64_[compat_]sys_xxx
 	__is_x32_name  = staticmethod(lambda n: n.startswith('__x32_'))  # __x32_compat_sys_xxx
 
-	def preferred_symbol(self, a: Symbol, b: Symbol) -> Symbol:
+	def _preferred_symbol(self, a: Symbol, b: Symbol) -> Optional[Symbol]:
 		# Try preferring the symbol with the right ABI in its prefix.
 		na, nb = a.name, b.name
 
@@ -203,7 +203,7 @@ class ArchX86(Arch):
 			if self.__is_x64_name(nb): return b
 			if not na.islower(): return b
 			if not nb.islower(): return a
-			return super().preferred_symbol(a, b)
+			return None
 
 		if self.abi == 'x32':
 			if self.__is_x32_name(na): return a
@@ -215,7 +215,7 @@ class ArchX86(Arch):
 		if self.__is_ia32_name(nb): return a
 		if not na.islower(): return b
 		if not nb.islower(): return a
-		return super().preferred_symbol(a, b)
+		return None
 
 	def skip_syscall(self, sc: Syscall) -> bool:
 		# Syscalls 512 through 547 are historically misnumbered and x32 only,
@@ -279,8 +279,7 @@ class ArchX86(Arch):
 
 		return False
 
-	def translate_syscall_symbol_name(self, sym_name: str) -> str:
-		sym_name = super().translate_syscall_symbol_name(sym_name)
+	def _translate_syscall_symbol_name(self, sym_name: str) -> str:
 		# For whatever reason some syscalls are wrapped in assembly at the entry
 		# point e.g. in v4.0 stub_execve in arch/x86/kernel/entry_64.S or
 		# stub32_execve in arch/x86/ia32/ia32entry.S. These stubs with prefix

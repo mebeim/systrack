@@ -1,6 +1,6 @@
 from typing import Tuple, List, Optional
 
-from ..elf import Symbol, ELF, E_MACHINE
+from ..elf import ELF, E_MACHINE
 from ..kconfig_options import VERSION_ZERO, VERSION_INF
 from ..syscall import Syscall
 from ..type_hints import KernelVersion
@@ -106,12 +106,6 @@ class ArchMips(Arch):
 			vmlinux.e_machine == E_MACHINE.EM_MIPS
 			and vmlinux.bits32 == self.bits32
 		)
-
-	def preferred_symbol(self, a: Symbol, b: Symbol) -> Symbol:
-		c = self.prefer_compat(a, b)
-		if c is not None:
-			return c
-		return super().preferred_symbol(a, b)
 
 	def _normalize_syscall_name(self, name: str) -> str:
 		# E.G. v5.1 asmlinkage int sysm_pipe(void) for weird historical reasons

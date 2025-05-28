@@ -174,10 +174,7 @@ class ArchPowerPC(Arch):
 			and vmlinux.bits32 == self.bits32
 		)
 
-	def preferred_symbol(self, a: Symbol, b: Symbol) -> Symbol:
-		if self.bits32:
-			return super().preferred_symbol(a, b)
-
+	def _preferred_symbol(self, a: Symbol, b: Symbol) -> Optional[Symbol]:
 		# Function descriptors take the "nice" symbol name, while the actual
 		# functions have a goofy dot prefix.
 		adot = a.name.startswith('.')
@@ -190,8 +187,7 @@ class ArchPowerPC(Arch):
 			if b.name.startswith('.sys_'): return b
 			return a if a.name.startswith('.compat_sys_') else b
 
-		# Base method does not know about dotted symbols
-		return super().preferred_symbol(a, b)
+		return None
 
 	def skip_syscall(self, sc: Syscall) -> bool:
 		if self.bits32 or self.kernel_version >= (5,0):
@@ -205,8 +201,8 @@ class ArchPowerPC(Arch):
 		# 'ppc64' or 'spu'
 		return sc.index % 2 == 1
 
-	def translate_syscall_symbol_name(self, sym_name: str) -> str:
-		return super().translate_syscall_symbol_name(noprefix(sym_name, '.sys_', '.'))
+	def _translate_syscall_symbol_name(self, sym_name: str) -> str:
+		return noprefix(sym_name, '.sys_', '.')
 
 	def _normalize_syscall_name(self, name: str) -> str:
 		return noprefix(name, 'ppc64_', 'ppc32_', 'ppc_')

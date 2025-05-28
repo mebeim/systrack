@@ -89,14 +89,7 @@ class ArchArm(Arch):
 			self.compat = False
 			self.syscall_table_name = 'sys_call_table'
 
-	def preferred_symbol(self, a: Symbol, b: Symbol) -> Symbol:
-		c = self.prefer_compat(a, b)
-		if c is not None:
-			return c
-		return super().preferred_symbol(a, b)
-
-	def translate_syscall_symbol_name(self, sym_name: str) -> str:
-		sym_name = super().translate_syscall_symbol_name(sym_name)
+	def _translate_syscall_symbol_name(self, sym_name: str) -> str:
 		# For some reason some syscalls are wrapped in assembly at the entry
 		# point e.g. sys_sigreturn_wrapper v5.18 arch/arm/kernel/entry-common.S.
 		# Stripping the "_wrapper" suffix can help locate them through source

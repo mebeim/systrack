@@ -81,11 +81,9 @@ class ArchRiscV(Arch):
 			and vmlinux.bits32 == self.bits32
 		)
 
-	def preferred_symbol(self, a: Symbol, b: Symbol) -> Symbol:
-		c = self.prefer_compat(a, b)
-		if c is not None:
-			return c
-
-		if a.name.startswith('__riscv_'): return a
-		if b.name.startswith('__riscv_'): return b
-		return super().preferred_symbol(a, b)
+	def _preferred_symbol(self, a: Symbol, b: Symbol) -> Optional[Symbol]:
+		if a.name.startswith('__riscv_'):
+			return a
+		if b.name.startswith('__riscv_'):
+			return b
+		return None

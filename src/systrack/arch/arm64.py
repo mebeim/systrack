@@ -66,15 +66,13 @@ class ArchArm64(Arch):
 	def matches(self, vmlinux: ELF) -> bool:
 		return not vmlinux.bits32 and vmlinux.e_machine == E_MACHINE.EM_AARCH64
 
-	def preferred_symbol(self, a: Symbol, b: Symbol) -> Symbol:
-		c = self.prefer_compat(a, b)
-		if c is not None:
-			return c
-
+	def _preferred_symbol(self, a: Symbol, b: Symbol) -> Optional[Symbol]:
 		# See commit 4378a7d4be30ec6994702b19936f7d1465193541
-		if a.name.startswith('__arm64_'): return a
-		if b.name.startswith('__arm64_'): return b
-		return super().preferred_symbol(a, b)
+		if a.name.startswith('__arm64_'):
+			return a
+		if b.name.startswith('__arm64_'):
+			return b
+		return None
 
 	def _normalize_syscall_name(self, name: str) -> str:
 		# E.g. v5.18 COMPAT_SYSCALL_DEFINE6(aarch32_mmap2, ...)
