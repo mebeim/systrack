@@ -42,8 +42,6 @@ class ArchPowerPC(Arch):
 		((2,6,15)    , (5,10)     , 'SECCOMP=y', ['PROC_FS=y']),
 		# rtas
 		((2,6,15)    , VERSION_INF, 'PPC_RTAS=y', []),
-		# pkey syscalls, technically defaults to =y
-		((4,16)      , VERSION_INF, 'PPC_MEM_KEYS=y', ['PPC_BOOK3S_64=y', 'PPC_64S_HASH_MMU=y']),
 	))
 
 	# FIXME: more like a curiosity, but why the hell do migrate_pages and
@@ -127,10 +125,11 @@ class ArchPowerPC(Arch):
 			#   assuming PPC_BOOK3S_64=y
 			self.kconfig.add((2,6,15), VERSION_INF, 'PPC_64K_PAGES=y', ['PPC_BOOK3S_64=y'])
 			# subpage_prot (ppc only, 64-bit only)
-			self.kconfig.add((2,6,25), (5,9)      , 'PPC_SUBPAGE_PROT=y', ['PPC_64K_PAGES=y', 'PPC_BOOK3S_64=y'])
-			self.kconfig.add((5,9)   , VERSION_INF, 'PPC_SUBPAGE_PROT=y', ['PPC_64K_PAGES=y', 'PPC_64S_HASH_MMU=y'])
+			self.kconfig.add((2,6,25), (5,17)     , 'PPC_SUBPAGE_PROT=y', ['PPC_64K_PAGES=y', 'PPC_BOOK3S_64=y'])
+			self.kconfig.add((5,17)  , VERSION_INF, 'PPC_SUBPAGE_PROT=y', ['PPC_64K_PAGES=y', 'PPC_64S_HASH_MMU=y'])
 			# pkey_alloc, pkey_free, pkey_mprotect
-			self.kconfig.add((4,16)  , VERSION_INF, 'PPC_MEM_KEYS=y', ['PPC_BOOK3S_64=y', 'PPC_64S_HASH_MMU=y'])
+			self.kconfig.add((4,16) , (5,17)     , 'PPC_MEM_KEYS=y', ['PPC_BOOK3S_64=y'])
+			self.kconfig.add((5,17) , VERSION_INF, 'PPC_MEM_KEYS=y', ['PPC_BOOK3S_64=y', 'PPC_64S_HASH_MMU=y'])
 			# switch_endian (esoteric fast version)
 			self.kconfig.add((4,15)  , (6,12)     , 'PPC_FAST_ENDIAN_SWITCH=y', []),
 			# spu_run, spu_create
