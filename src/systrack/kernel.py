@@ -636,8 +636,10 @@ class Kernel:
 		if self.outdir:
 			cmd += [f'O={self.outdir}']
 
-		# Tools are compiled with -Werror by default.
-		cmd += ['WERROR=0']
+		# Tools are compiled with -Werror by default. 5.15+ has CONFIG_WERROR,
+		# which we set =n, but older kernels accept WERROR=.
+		if self.version < (5,15):
+			cmd += ['WERROR=0']
 
 		if ensure:
 			ensure_command(cmd + [target], self.kdir, stdin, False, high_verbosity())

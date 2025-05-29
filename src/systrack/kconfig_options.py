@@ -74,6 +74,7 @@ KCONFIG_DEBUGGING = VersionedList((
 #
 KCONFIG_COMPATIBILITY = VersionedList((
 	# since        removed in   list of name=value
+	(VERSION_ZERO, (6,6)      , ['EMBEDDED=n']),
 	((2,6,32)    , VERSION_INF, ['WLAN=n', 'NETDEVICES=n']),
 	((2,6,28)    , VERSION_INF, ['WIRELESS=n']),
 	((3,7)       , VERSION_INF, ['MODULE_SIG=n']),
@@ -82,6 +83,7 @@ KCONFIG_COMPATIBILITY = VersionedList((
 	((4,14)      , (4,15)     , ['GUESS_UNWINDER=y', 'ORC_UNWINDER=n', 'FRAME_POINTER_UNWINDER=n']),
 	((4,15)      , VERSION_INF, ['UNWINDER_GUESS=y', 'UNWINDER_ORC=n', 'UNWINDER_FRAME_POINTER=n']),
 	((5,2)       , VERSION_INF, ['DEBUG_INFO_BTF=n']),
+	((5,15)      , VERSION_INF, ['WERROR=n']),
 ))
 
 # Kconfig options to enable optional syscalls. We want to build a kernel with as
