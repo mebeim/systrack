@@ -198,8 +198,12 @@ def command_argv_to_string(cmd: Union[AnyStrOrPath,Iterable[AnyStrOrPath]]) -> s
 	'''Convert the given command, which can be str, bytes, Path, or an iterable
 	containing any of those, to a shlex-escaped string.
 	'''
-	if not isinstance(cmd, Iterable):
-		return shlex_quote(str(cmd))
+	if isinstance(cmd, Path):
+		return str(cmd)
+	elif isinstance(cmd, bytes):
+		return cmd.decode()
+	elif isinstance(cmd, str):
+		return cmd
 
 	parts = []
 	for part in cmd:
