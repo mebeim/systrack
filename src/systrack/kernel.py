@@ -629,7 +629,7 @@ class Kernel:
 
 		# Generate debug info with relative paths to make our life easier for
 		# later analysis.
-		cmd += [f"KCFLAGS='-fdebug-prefix-map={self.kdir.absolute()}=.'"]
+		cmd += [f'KCFLAGS=-fdebug-prefix-map={self.kdir.absolute()}=.']
 
 		if self.toolchain_prefix:
 			cmd += [f'CROSS_COMPILE={self.toolchain_prefix}']
