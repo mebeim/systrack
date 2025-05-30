@@ -10,9 +10,9 @@ from textwrap import TextWrapper
 from .arch import SUPPORTED_ARCHS, SUPPORTED_ARCHS_HELP
 from .kernel import Kernel, KernelError, KernelArchError, KernelMultiABIError
 from .kernel import KernelVersionError, KernelWithoutSymbolsError
+from .log import log_setup, eprint
 from .output import output_syscalls
 from .utils import command_argv_to_string, command_available
-from .utils import eprint, enable_high_verbosity, enable_silent
 from .utils import gcc_version, git_checkout, maybe_rel, format_duration
 from .version import VERSION, VERSION_HELP
 
@@ -76,58 +76,16 @@ def parse_args() -> argparse.Namespace:
 		'with -b'))
 	ap.add_argument('-q', '--quiet', action='count', default=0,
 		help=wrap_help('quietness level:\n'
-		'  -q = no info, -qq = no warnings, -qqq = no errors\n'
-		'  -qqqq = no standard error output whatsoever'))
+		'  -q: no info; -qq: no warnings; -qqq: no errors;\n'
+		'  -qqqq: no standard error output whatsoever'))
 	ap.add_argument('-v', '--verbose', action='count', default=0,
-		help=wrap_help('verbosity level:\n  -v = info, -vv = debug, -vvv = more debug'))
+		help=wrap_help('verbosity level:\n'
+			'  -v: info; -vv: debug; -vvv: more debug;\n'
+			'  -vvvv: also pass V=1 to make when building'))
 	ap.add_argument('-V', '--version', action='version', version=VERSION_HELP,
 		help=wrap_help('show version information and exit'))
 
 	return ap.parse_args()
-
-def setup_logging(quietness: int, verbosity: int, colors: bool = True):
-	'''Setup logging verbosity on the root logger based on the given quietness
-	and verbosity levels from command line arguments (number of -q and -v
-	options given). Enable colored logs with ANSI escape codes if color=True.
-	'''
-	orig_factory = logging.getLogRecordFactory()
-
-	if verbosity > 0:
-		quietness = 0
-		if verbosity >= 3:
-			enable_high_verbosity()
-
-	if quietness >= 1:
-		quietness -= 1
-		enable_silent()
-
-	if colors:
-		fmt = '%(color)s[%(levelname)s] %(message)s\x1b[0m'
-		level_colors = {
-			logging.CRITICAL: '\x1b[1;31m',
-			logging.ERROR   : '\x1b[31m',
-			logging.WARNING : '\x1b[33m',
-			logging.INFO    : '\x1b[32m',
-			logging.DEBUG   : '\x1b[34m',
-		}
-
-		def record_factory(*args, **kwargs):
-			record = orig_factory(*args, **kwargs)
-			lvl = record.levelno
-			record.color = level_colors.get(lvl, '')
-			record.levelname = 'FATAL' if lvl == logging.CRITICAL else record.levelname[0]
-			return record
-	else:
-		fmt = '[%(levelname)s] %(message)s'
-
-		def record_factory(*args, **kwargs):
-			record = orig_factory(*args, **kwargs)
-			record.levelname = 'FATAL' if record.levelno == logging.CRITICAL else record.levelname[0]
-			return record
-
-	adj = quietness - verbosity
-	logging.basicConfig(level=max(30 + 10 * adj, 0), format=fmt)
-	logging.setLogRecordFactory(record_factory)
 
 def instantiate_kernel(*a, **kwa) -> Kernel:
 	'''Instantiate the Kernel class with the given parameters, handling and
@@ -164,7 +122,7 @@ def main() -> int:
 	signal.signal(signal.SIGINT, sigint_handler)
 
 	args = parse_args()
-	setup_logging(args.quiet, args.verbose, os.isatty(sys.stderr.fileno()))
+	log_setup(args.quiet, args.verbose, os.isatty(sys.stderr.fileno()))
 
 	logging.debug('Systrack v%s', VERSION)
 	logging.debug('Command line: systrack %s', command_argv_to_string(sys.argv[1:]))

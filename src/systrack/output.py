@@ -6,7 +6,8 @@ from pathlib import Path
 from typing import Iterable
 
 from .kernel import Kernel
-from .utils import eprint, noprefix
+from .log import eprint
+from .utils import noprefix
 from .syscall import Syscall
 from .version import VERSION, VERSION_COPY
 

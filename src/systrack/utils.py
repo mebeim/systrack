@@ -9,6 +9,8 @@ from subprocess import Popen, DEVNULL, PIPE
 from textwrap import indent
 from typing import Union, Iterable, Tuple, Any, AnyStr, Hashable, Optional
 
+from .log import log_verbosity
+
 
 AnyStrOrPath = Union[AnyStr,Path]
 
@@ -104,40 +106,6 @@ class VersionedList:
 		'''
 		self.versions[vstart, vend].extend(values)
 
-SILENT = False
-HIGH_VERBOSITY = False
-
-def high_verbosity() -> bool:
-	'''Return whether high verbosity is enabled (True if a lot of -v are given).
-	'''
-	return HIGH_VERBOSITY
-
-def enable_high_verbosity():
-	'''Enable high verbosity: logging of invoked subcommands and potentially
-	more stuff.
-	'''
-	# We don't want to log what subcommands are invoked unless high verbosity
-	# is needed, as it clutters the output.
-	global HIGH_VERBOSITY
-	HIGH_VERBOSITY = True
-
-def silent() -> bool:
-	'''Return whether silent mode is enabled (True if a lot of -q are given).
-	'''
-	return SILENT
-
-def enable_silent():
-	'''Enable silent mode: output to standard error of any kind is disabled.'''
-	global SILENT
-	SILENT = True
-
-def eprint(*a, **kwa):
-	'''print() wrapper that prints on standard error and flushes after printing,
-	only if not in silent mode.
-	'''
-	if not SILENT:
-		print(*a, **kwa, file=sys.stderr, flush=True)
-
 def maybe_rel(path: Path, root: Path) -> Path:
 	'''Calculate and return a the given path relative to root. If path is not
 	relative to root, it is returned as is.
@@ -224,7 +192,7 @@ def run_command(cmd: Union[AnyStrOrPath,Iterable[AnyStrOrPath]],
 	optionally enabling console output. The returned value is the exit code of
 	the command.
 	'''
-	if HIGH_VERBOSITY:
+	if log_verbosity() >= 3:
 		logging.debug('Running command: %s', command_argv_to_string(cmd))
 
 	if console_output:
@@ -254,7 +222,7 @@ def ensure_command(cmd: Union[AnyStrOrPath,Iterable[AnyStrOrPath]],
 	# console_output implies not capture_stdout
 	assert not console_output or not capture_stdout
 
-	if HIGH_VERBOSITY:
+	if log_verbosity() >= 3:
 		logging.debug('Running command: %s', command_argv_to_string(cmd))
 
 	if console_output:

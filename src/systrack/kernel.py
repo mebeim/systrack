@@ -15,11 +15,12 @@ from .kconfig import edit_config, edit_config_check_deps
 from .kconfig import kconfig_more_syscalls, kconfig_debugging
 from .kconfig import kconfig_compatibility, kconfig_syscall_deps
 from .location import extract_syscall_locations
+from .log import log_verbosity
 from .signature import extract_syscall_signatures
 from .syscall import Syscall, common_syscall_symbol_prefixes
 from .type_hints import KernelVersion
-from .utils import run_command, ensure_command, high_verbosity
-from .utils import maybe_rel, noprefix
+from .utils import ensure_command, maybe_rel, noprefix, run_command
+
 
 class KernelError(RuntimeError):
 	pass
@@ -38,6 +39,7 @@ class KernelVersionError(KernelError):
 
 class KernelWithoutSymbolsError(KernelError):
 	pass
+
 
 class Kernel:
 	__version         = None
@@ -373,7 +375,7 @@ class Kernel:
 				pref = self.arch.preferred_symbol(sym, other)
 				sym, other = pref, (other if pref is sym else sym)
 
-				if high_verbosity():
+				if log_verbosity() >= 3:
 					preferred_logs.append((pref.name, other.name))
 
 			symbols_by_vaddr[vaddr] = sym
@@ -437,7 +439,7 @@ class Kernel:
 						vaddr)
 				continue
 
-			if high_verbosity():
+			if log_verbosity() >= 3:
 				if have_syscall_table:
 					logging.debug('%s[%d]: %s', self.arch.syscall_table_name,
 						idx, sym)
@@ -629,23 +631,26 @@ class Kernel:
 
 		# Generate debug info with relative paths to make our life easier for
 		# later analysis.
-		cmd += [f'KCFLAGS=-fdebug-prefix-map={self.kdir.absolute()}=.']
+		cmd.append(f'KCFLAGS=-fdebug-prefix-map={self.kdir.absolute()}=.')
 
 		if self.toolchain_prefix:
-			cmd += [f'CROSS_COMPILE={self.toolchain_prefix}']
+			cmd.append(f'CROSS_COMPILE={self.toolchain_prefix}')
 		if self.outdir:
-			cmd += [f'O={self.outdir}']
+			cmd.append(f'O={self.outdir}')
 
 		# Tools are compiled with -Werror by default. 5.15+ has CONFIG_WERROR,
 		# which we set =n, but older kernels accept WERROR=.
 		if self.version < (5,15):
-			cmd += ['WERROR=0']
+			cmd.append('WERROR=0')
+
+		if log_verbosity() >= 4:
+			cmd.append('V=1')
 
 		if ensure:
-			ensure_command(cmd + [target], self.kdir, stdin, False, high_verbosity())
+			ensure_command(cmd + [target], self.kdir, stdin, False, log_verbosity() >= 3)
 			return 0
 
-		return run_command(cmd + [target], self.kdir, stdin, high_verbosity())
+		return run_command(cmd + [target], self.kdir, stdin, log_verbosity() >= 3)
 
 	def sync_config(self):
 		'''Set any config that was "unlocked" by others to its default value.
