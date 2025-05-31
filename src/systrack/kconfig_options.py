@@ -75,8 +75,9 @@ KCONFIG_DEBUGGING = VersionedList((
 KCONFIG_COMPATIBILITY = VersionedList((
 	# since        removed in   list of name=value
 	(VERSION_ZERO, (6,6)      , ['EMBEDDED=n']),
-	((2,6,32)    , VERSION_INF, ['WLAN=n', 'NETDEVICES=n']),
 	((2,6,28)    , VERSION_INF, ['WIRELESS=n']),
+	((2,6,32)    , VERSION_INF, ['WLAN=n', 'NETDEVICES=n']),
+	((2,6,36)    , VERSION_INF, ['SECURITY_APPARMOR=n']),
 	((3,7)       , VERSION_INF, ['MODULE_SIG=n']),
 	((3,13)      , VERSION_INF, ['SYSTEM_TRUSTED_KEYRING=n']),
 	((4,6)       , VERSION_INF, ['STACK_VALIDATION=n']),
