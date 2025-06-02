@@ -94,8 +94,6 @@ KCONFIG_COMPATIBILITY = VersionedList((
 #
 # Notes on some of these:
 #
-# - COMPAT_32BIT_TIME=y enables compat 32-bit time syscalls from which some
-#   archs may have opted out by default
 # - CRYPTO_SHA256=y is needed for KEXEC_FILE
 # - INOTIFY=y is needed for INOTIFY_USER (only from v2.6.18 to v2.6.28)
 # - PROFILING=y is needed for PERF_EVENTS
@@ -115,7 +113,6 @@ KCONFIG_MORE_SYSCALLS = VersionedDict((
 	(VERSION_ZERO, (4,1)      , 'BSD_PROCESS_ACCT=y'   , []),
 	((4,1)       , VERSION_INF, 'BSD_PROCESS_ACCT=y'   , ['MULTIUSER=y']),
 	((3,3)       , VERSION_INF, 'CHECKPOINT_RESTORE=y' , []),
-	((4,18)      , VERSION_INF, 'COMPAT_32BIT_TIME=y'  , []),
 	((3,15)      , VERSION_INF, 'CROSS_MEMORY_ATTACH=y', ['MMU=y']),
 	(VERSION_ZERO, VERSION_INF, 'CRYPTO_SHA256=y'      , []),
 	((2,6,36)    , VERSION_INF, 'FANOTIFY=y'           , []),
