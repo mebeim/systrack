@@ -16,18 +16,19 @@ class ArchArm64(Arch):
 
 	kconfig = VersionedDict((
 		# Enable aarch32 ABI regardless, should be =y by default, but better safe than sorry
-		((3,7) , VERSION_INF, 'COMPAT=y', ['ARM64_4K_PAGES=y', 'EXPERT=y']),
+		((3,7) , VERSION_INF, 'COMPAT=y'       , ['ARM64_4K_PAGES=y', 'EXPERT=y']),
 		# kexec[_file]_load
-		((4,8) , VERSION_INF, 'KEXEC=y'     , ['PM_SLEEP_SMP=y']),
-		((5,0) , VERSION_INF, 'KEXEC_FILE=y', []),
+		((4,8) , VERSION_INF, 'KEXEC=y'        , ['PM_SLEEP_SMP=y']),
+		((5,0) , VERSION_INF, 'KEXEC_FILE=y'   , []),
 		# seccomp
-		((3,19), (5,10)     , 'SECCOMP=y'   , []),
+		((3,19), (5,10)     , 'SECCOMP=y'      , []),
 		# mbind, migrate_pages, {get,set}_mempolicy
-		((4,7) , VERSION_INF, 'NUMA=y'      , []),
+		((4,7) , VERSION_INF, 'NUMA=y'         , []),
 		# pkey syscalls, technically defaults to =y
-		((6,12), VERSION_INF, 'ARM64_POE=y' , []),
-		# map_shadow_stack
-		((6,13), VERSION_INF, 'ARM64_GCS=y' , ['UPROBES=n']),
+		((6,12), VERSION_INF, 'ARM64_POE=y'    , []),
+		# map_shadow_stack (needs UPROBES=n disabled via UPROBE_EVENTS=n)
+		((6,13), VERSION_INF, 'UPROBE_EVENTS=n', []),
+		((6,13), VERSION_INF, 'ARM64_GCS=y'    , ['UPROBES=n']),
 	))
 
 	kconfig_syscall_deps = VersionedDict((
