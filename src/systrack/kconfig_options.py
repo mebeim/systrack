@@ -72,6 +72,9 @@ KCONFIG_DEBUGGING = VersionedList((
 # compiler/toolchain compatibility, removing unneeded build dependencies and
 # disabling unneeded pieces of kernel code.
 #
+# Some of these are arch-specific, but we don't care as they will simply be
+# ignored on the wrong arch.
+#
 KCONFIG_COMPATIBILITY = VersionedList((
 	# since        removed in   list of name=value
 	(VERSION_ZERO, (6,6)      , ['EMBEDDED=n']),
@@ -96,6 +99,9 @@ KCONFIG_COMPATIBILITY = VersionedList((
 #
 # - CRYPTO_SHA256=y is needed for KEXEC_FILE
 # - INOTIFY=y is needed for INOTIFY_USER (only from v2.6.18 to v2.6.28)
+# - PCI=y is needed for pci syscalls and is arch-specific before v5.0 (with
+#   different dependencies too), but we can enable it here regardless as a
+#   sanity check
 # - PROFILING=y is needed for PERF_EVENTS
 # - QUOTA=y is needed for QUOTACTL, which should be auto-selected by QUOTA=y
 # - SECCOMP was arch-specific before v5.10, then became arch-agnostic
@@ -141,7 +147,8 @@ KCONFIG_MORE_SYSCALLS = VersionedDict((
 	((2,6,29)    , (3,1)      , 'NFSD=y'               , ['INET=y', 'FILE_LOCKING=y', 'FSNOTIFY=y']),
 	((2,6,32)    , VERSION_INF, 'PROFILING=y'          , []),
 	(VERSION_ZERO, VERSION_INF, 'PERF_EVENTS=y'        , ['HAVE_PERF_EVENTS=y']),
-	(VERSION_ZERO, VERSION_INF, 'PCI_SYSCALL=y'        , ['PCI=y']),
+	(VERSION_ZERO, (5,0)      , 'PCI=y'                , []),
+	((5,0)       , VERSION_INF, 'PCI=y'                , ['HAVE_PCI=y']),
 	(VERSION_ZERO, VERSION_INF, 'POSIX_MQUEUE=y'       , ['NET=y']),
 	((4,10)      , VERSION_INF, 'POSIX_TIMERS=y'       , ['EXPERT=y']),
 	((2,6,30)    , VERSION_INF, 'QUOTA=y'              , []),
@@ -298,8 +305,8 @@ KCONFIG_SYSCALL_DEPS = VersionedDict((
 	(VERSION_ZERO, VERSION_INF, 'get_mempolicy'          , 'NUMA'               ),
 	(VERSION_ZERO, VERSION_INF, 'set_mempolicy'          , 'NUMA'               ),
 	(VERSION_ZERO, VERSION_INF, 'set_mempolicy_home_node', 'NUMA'               ),
-	(VERSION_ZERO, VERSION_INF, 'pciconfig_read'         , 'PCI_SYSCALL'        ),
-	(VERSION_ZERO, VERSION_INF, 'pciconfig_write'        , 'PCI_SYSCALL'        ),
+	(VERSION_ZERO, VERSION_INF, 'pciconfig_read'         , 'PCI'                ),
+	(VERSION_ZERO, VERSION_INF, 'pciconfig_write'        , 'PCI'                ),
 	(VERSION_ZERO, VERSION_INF, 'perf_event_open'        , 'PERF_EVENTS'        ),
 	(VERSION_ZERO, VERSION_INF, 'mq_notify'              , 'POSIX_MQUEUE'       ),
 	(VERSION_ZERO, VERSION_INF, 'mq_open'                , 'POSIX_MQUEUE'       ),
