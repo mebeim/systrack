@@ -326,9 +326,9 @@ def extract_syscall_locations(syscalls: List[Syscall], vmlinux: ELF, arch: Arch,
 			# full adjustment and grepping for every single syscall, which is
 			# very slow. Warn so that the user figures this out without having
 			# to wait for everything to complete.
-			logging.warn('All the locations obtained from addr2line look bad, '
-				'did you provide the correct KDIR?')
-			logging.warn('Skipping location information extraction')
+			logging.warning('All the locations obtained from addr2line look '
+				'bad, did you provide the correct KDIR?')
+			logging.warning('Skipping location information extraction')
 			return
 
 		vaddrs = tuple(map(lambda s: s.symbol.real_vaddr + s.symbol.size - 1, to_adjust))
@@ -456,5 +456,5 @@ def extract_syscall_locations(syscalls: List[Syscall], vmlinux: ELF, arch: Arch,
 			sc.good_location = True
 			sc.grepped_location = True
 
-			logging.warn('Location found through grepping: %s -> %s:%d',
+			logging.warning('Location found through grepping: %s -> %s:%d',
 				sc.origname, rel(file), line)

@@ -218,15 +218,15 @@ class Kernel:
 			# Sanity check: ensure all vaddrs are within the target section
 			for idx, vaddr in enumerate(vaddrs):
 				if not (vstart <= vaddr < vend):
-					logging.warn('Virtual address 0x%x idx %d is outside %s: '
+					logging.warning('Virtual address 0x%x idx %d is outside %s: '
 						'something is off!', vaddr, tbl.name, idx, target_section.name)
 		else:
 			# Apparently on some archs (e.g. MIPS, PPC) the syscall table symbol
 			# can have size 0. In this case we'll just warn the user and keep
 			# extracting vaddrs as long as they are valid, stopping at the first
 			# invalid one or at the next symbol we encounter.
-			logging.warn('Syscall table (%s) has bad size (%d), doing my best '
-				'to figure out when to stop', tbl.name, tbl.size)
+			logging.warning('Syscall table (%s) has bad size (%d), doing my '
+				' best to figure out when to stop', tbl.name, tbl.size)
 
 			cur_idx_vaddr = tbl.vaddr
 			boundary = self.vmlinux.next_symbol(tbl)
@@ -292,7 +292,7 @@ class Kernel:
 					vaddr = struct.unpack(self.__long_pack_fmt, vaddr)[0]
 
 					if not (text_vstart <= vaddr < text_vend):
-						logging.warn('Function descriptor at 0x%x points '
+						logging.warning('Function descriptor at 0x%x points '
 							'outside .text: something is off!', desc_vaddr)
 
 					vaddrs[i] = vaddr
@@ -325,7 +325,7 @@ class Kernel:
 		if have_syscall_table:
 			vaddrs = self.__syscall_vaddrs_from_syscall_table()
 		else:
-			logging.warn('No syscall table available! Trying my best...')
+			logging.warning('No syscall table available! Trying my best...')
 			vaddrs = self.arch.extract_syscall_vaddrs(self.vmlinux)
 
 		if not vaddrs:
@@ -421,7 +421,7 @@ class Kernel:
 		for va, n in counts:
 			sym = symbols_by_vaddr.get(va, f'{va:#x} <unknown symbol!>')
 			if sym not in ni_syscalls:
-				logging.warn('Interesting! Vaddr found %d times: %s', n, sym)
+				logging.warning('Interesting! Vaddr found %d times: %s', n, sym)
 
 		symbols      = []
 		symbol_names = []
@@ -459,7 +459,7 @@ class Kernel:
 		if prefixes:
 			logging.info('Common syscall symbol prefixes: %s', ', '.join(prefixes))
 		else:
-			logging.warn('No common syscall symbol prefixes found (weird!)')
+			logging.warning('No common syscall symbol prefixes found (weird!)')
 
 		syscalls  = []
 		n_skipped = 0
@@ -559,7 +559,7 @@ class Kernel:
 					# happen for implemented syscalls. Nonetheless warn
 					# about it, so we can double check and make sure
 					# everything is fine.
-					logging.warn('Assuming %s is not implemented as it '
+					logging.warning('Assuming %s is not implemented as it '
 						'points to %s:%d after adjustments', sc.name,
 						self.__rel(file), line)
 					continue
@@ -589,7 +589,7 @@ class Kernel:
 			implemented.append(sc)
 
 		for info in bad_loc_info:
-			logging.warn('Potentially bad location for %s (%s): %s:%s%s', *info)
+			logging.warning('Potentially bad location for %s (%s): %s:%s%s', *info)
 
 		for info in no_loc_info:
 			logging.error('Unable to find location for %s (%s)', *info)
@@ -726,7 +726,7 @@ class Kernel:
 
 				logging.error('Failed to build with -O1, doing a normal build')
 			else:
-				logging.warn('Unable to patch Makefile to disable '
+				logging.warning('Unable to patch Makefile to disable '
 					'optimizations, doing a normal build instead')
 
 		self.make('vmlinux')
