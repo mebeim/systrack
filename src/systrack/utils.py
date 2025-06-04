@@ -133,7 +133,7 @@ def anysuffix(s: str, *sxs: str) -> bool:
 	return any(s.endswith(sx) for sx in sxs)
 
 def noprefix(s: str, *pxs: str) -> str:
-	'''Find the first matching prefix among pxs and return the given string
+	'''Find the first matching prefix in s among pxs and return a new string
 	without it. If s does not have any of the given prefixes, it is returned as
 	is.
 	'''
@@ -143,7 +143,7 @@ def noprefix(s: str, *pxs: str) -> str:
 	return s
 
 def nosuffix(s: str, *sxs: str) -> str:
-	'''Find the first matching suffix among pxs and return the given string
+	'''Find the first matching suffix in s among sxs and return a new string
 	without it. If s does not have any of the given suffixes, it is returned as
 	is.
 	'''
