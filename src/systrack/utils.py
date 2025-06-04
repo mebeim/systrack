@@ -3,7 +3,7 @@ import logging
 
 from collections import defaultdict
 from pathlib import Path
-from shlex import join as shlex_join, quote as shlex_quote
+from shlex import join as shlex_join
 from shutil import which
 from subprocess import Popen, DEVNULL, PIPE
 from textwrap import indent
@@ -21,9 +21,9 @@ class VersionedDict:
 	a {key: value} for a range of versions can be done through the .add()
 	method.
 	'''
-	__slots__ = ('versions', 'cache')
+	__slots__ = ('_versions', '_cache')
 
-	def __init__(self, iterable: Iterable[Tuple[Hashable,Hashable,Hashable,Any]] = None):
+	def __init__(self, iterable: Optional[Iterable[Tuple[Hashable,Hashable,Hashable,Any]]]=None):
 		'''Instantiate a VersionedDict given initial version ranges and relative
 		key-value pairs, or an empty VersionedDict if iterable is not given.
 
@@ -31,26 +31,25 @@ class VersionedDict:
 		form (vstart, vend, key, val), i.e., the same parameters taken by the
 		.add() method.
 		'''
-		self.cache    = {}
-		self.versions = defaultdict(dict)
+		self._cache    = {}
+		self._versions = defaultdict(dict)
 
 		if iterable is not None:
 			for vstart, vend, key, val in iterable:
-				self.versions[vstart, vend][key] = val
+				self._versions[vstart, vend][key] = val
 
 	def __getitem__(self, version: Hashable) -> dict:
 		'''Get the dict corresponding to the given version.
 		'''
-		if version not in self.cache:
-			self.cache[version] = self.__getversion(version)
-		return self.cache[version]
+		if version not in self._cache:
+			self._cache[version] = self._getversion(version)
+		return self._cache[version]
 
-	def __getversion(self, version: Hashable) -> dict:
-		'''Get the dict corresponding to a given version, or create and cache
-		one if the given version was never requested before.
+	def _getversion(self, version: Hashable) -> dict:
+		'''Create and return the dict corresponding to the given version.
 		'''
 		res = {}
-		for (vstart, vend), dct in self.versions.items():
+		for (vstart, vend), dct in self._versions.items():
 			if vstart <= version < vend:
 				res.update(dct)
 		return res
@@ -59,16 +58,22 @@ class VersionedDict:
 		'''Add a {key: value} mapping for all versions of this VersionedDict
 		between vstart (included) and vend (not included).
 		'''
-		self.versions[vstart, vend][key] = value
+		self._versions[vstart, vend][key] = value
+
+		# Invalidate cache for any version in [vstart, vend)
+		for v in self._cache:
+			if vstart <= v < vend:
+				del self._cache[v]
+
 
 class VersionedList:
 	'''A list that can have multiple versions with different contents. Accessing
 	lst[version] will return the value of the list for the given version. Adding
 	values for a range of versions can be done through the .add() method.
 	'''
-	__slots__ = ('versions', 'cache')
+	__slots__ = ('_versions', '_cache')
 
-	def __init__(self, iterable: Iterable[Tuple[Hashable,Hashable,Iterable[Any]]] = None):
+	def __init__(self, iterable: Optional[Iterable[Tuple[Hashable,Hashable,Iterable[Any]]]]=None):
 		'''Instantiate a VersionedList given initial version ranges and relative
 		values, or an empty VersionedList if iterable is not given.
 
@@ -76,26 +81,25 @@ class VersionedList:
 		form (vstart, vend, iterable_of_values), i.e., the same parameters taken
 		by the .add() method.
 		'''
-		self.cache    = {}
-		self.versions = defaultdict(list)
+		self._cache    = {}
+		self._versions = defaultdict(list)
 
 		if iterable is not None:
 			for vstart, vend, values in iterable:
-				self.versions[vstart, vend].extend(values)
+				self._versions[vstart, vend].extend(values)
 
 	def __getitem__(self, version: Hashable) -> list:
 		'''Get the list corresponding to the given version.
 		'''
-		if version not in self.cache:
-			self.cache[version] = self.__getversion(version)
-		return self.cache[version]
+		if version not in self._cache:
+			self._cache[version] = self._getversion(version)
+		return self._cache[version]
 
-	def __getversion(self, version: Hashable) -> list:
-		'''Get the list corresponding to a given version, or create and cache
-		one if the given version was never requested before.
+	def _getversion(self, version: Hashable) -> list:
+		'''Create and return the list corresponding to the given version.
 		'''
 		res = []
-		for (vstart, vend), lst in self.versions.items():
+		for (vstart, vend), lst in self._versions.items():
 			if vstart <= version < vend:
 				res.extend(lst)
 		return res
@@ -104,7 +108,13 @@ class VersionedList:
 		'''Add all the values from values to for all versions of this
 		VersionedList between vstart (included) and vend (not included).
 		'''
-		self.versions[vstart, vend].extend(values)
+		self._versions[vstart, vend].extend(values)
+
+		# Invalidate cache for any version in [vstart, vend)
+		for v in self._cache:
+			if vstart <= v < vend:
+				del self._cache[v]
+
 
 def maybe_rel(path: Path, root: Path) -> Path:
 	'''Calculate and return a the given path relative to root. If path is not
