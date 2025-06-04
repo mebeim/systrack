@@ -99,17 +99,17 @@ class ArchX86(Arch):
 			self.kconfig.add((2,6,24), (4,3)      , 'VM86=y'           , ['X86_32=y', 'EXPERT=y']),
 			self.kconfig.add((4,3)   , VERSION_INF, 'X86_LEGACY_VM86=y', ['X86_32=y']),
 			self.kconfig.add((4,3)   , VERSION_INF, 'X86_LEGACY_VM86=y', ['X86_32=y']),
-			# Needed for NUMA=y
-			self.kconfig.add(VERSION_ZERO, VERSION_INF, 'NOHIGHMEM=n', [])
-			self.kconfig.add(VERSION_ZERO, VERSION_INF, 'HIGHMEM4G=n', [])
-			self.kconfig.add(VERSION_ZERO, VERSION_INF, 'HIGHMEM64G=y', [])
-			self.kconfig.add(VERSION_ZERO, VERSION_INF, 'X86_BIGSMP=y', ['SMP=y'])
+			# Needed for NUMA=y (NUMA support dropped in v6.15)
+			self.kconfig.add(VERSION_ZERO, (6,15), 'NOHIGHMEM=n', [])
+			self.kconfig.add(VERSION_ZERO, (6,15), 'HIGHMEM4G=n', [])
+			self.kconfig.add(VERSION_ZERO, (6,15), 'HIGHMEM64G=y', [])
+			self.kconfig.add(VERSION_ZERO, (6,15), 'X86_BIGSMP=y', ['SMP=y'])
 			# mbind, migrate_pages, {get,set}_mempolicy
 			#   NOTE: before v2.6.29 NUMA actually also needs more options in
 			#   OR, but we don't support checking kconfig expressions
-			self.kconfig.add(VERSION_ZERO, (2,6,23)   , 'NUMA=y', ['SMP=y', 'HIGHMEM64G=y'])
-			self.kconfig.add((2,6,23)    , (2,6,29)   , 'NUMA=y', ['SMP=y', 'HIGHMEM64G=y', 'EXPERIMENTAL=y'])
-			self.kconfig.add((2,6,29)    , VERSION_INF, 'NUMA=y', ['SMP=y', 'HIGHMEM64G=y', 'X86_BIGSMP=y'])
+			self.kconfig.add(VERSION_ZERO, (2,6,23), 'NUMA=y', ['SMP=y', 'HIGHMEM64G=y'])
+			self.kconfig.add((2,6,23)    , (2,6,29), 'NUMA=y', ['SMP=y', 'HIGHMEM64G=y', 'EXPERIMENTAL=y'])
+			self.kconfig.add((2,6,29)    , (6,15)  , 'NUMA=y', ['SMP=y', 'HIGHMEM64G=y', 'X86_BIGSMP=y'])
 		else:
 			self.abi_bits32       = self.abi == 'ia32'
 			self.compat           = self.abi != 'x64'
