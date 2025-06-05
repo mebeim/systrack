@@ -9,7 +9,7 @@
 import logging
 
 from pathlib import Path
-from typing import List, Dict, Iterable, Optional, Tuple
+from typing import List, Dict, Iterable, Optional
 
 from .arch import Arch
 from .kconfig_options import *
