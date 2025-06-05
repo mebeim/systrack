@@ -14,7 +14,7 @@ class ArchRiscV(Arch):
 
 	kconfig = VersionedDict((
 		# kexec_load
-		((4,8) , VERSION_INF, 'KEXEC=y'     , ['MMU=y']),
+		((5,13), VERSION_INF, 'KEXEC=y'     , ['MMU=y']),
 		# seccomp
 		((5,5) , (5,10)     , 'SECCOMP=y'   , []),
 		# mbind, migrate_pages, {get,set}_mempolicy
@@ -57,7 +57,9 @@ class ArchRiscV(Arch):
 			# safe than sorry)
 			self.kconfig.add((5,19), VERSION_INF, 'COMPAT=y', ['64BIT=y', 'MMU=y']),
 			# kexec_file_load
-			self.kconfig.add((5,19), VERSION_INF, 'KEXEC_FILE=y', ['64BIT=y','MMU=y'])
+			self.kconfig.add((5,19), (6,2)      , 'KEXEC_FILE=y', ['64BIT=y'])
+			self.kconfig.add((5,19), (6,7)      , 'KEXEC_FILE=y', ['64BIT=y','MMU=y'])
+			self.kconfig.add((6,7) , VERSION_INF, 'KEXEC_FILE=y', ['64BIT=y'])
 
 
 	@staticmethod
