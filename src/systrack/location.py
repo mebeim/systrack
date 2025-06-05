@@ -328,6 +328,7 @@ def extract_syscall_locations(syscalls: List[Syscall], vmlinux: ELF, arch: Arch,
 			# to wait for everything to complete.
 			logging.warning('All the locations obtained from addr2line look '
 				'bad, did you provide the correct KDIR?')
+			logging.warning('You may want to try using --remap ORIG_KDIR')
 			logging.warning('Skipping location information extraction')
 			return
 
@@ -414,6 +415,7 @@ def extract_syscall_locations(syscalls: List[Syscall], vmlinux: ELF, arch: Arch,
 	if bad_paths:
 		logging.error('Cannot grep source code, debug info points outside '
 			'provided kernel source directory')
+		logging.warning('You may want to try using --remap ORIG_KDIR')
 		return
 
 	# STEP 4: Still bad? Use the big hammer: recursively grep kernel sources.
