@@ -7,11 +7,11 @@ from time import monotonic
 from os import sched_getaffinity
 from operator import itemgetter, attrgetter
 from collections import defaultdict, Counter
-from typing import Tuple, List, Dict, Iterator, Union, Any, Optional
+from typing import Tuple, List, Dict, Iterable, Iterator, Union, Any, Optional
 
 from .arch import arch_from_name, arch_from_vmlinux
 from .elf import ELF, Symbol, Section
-from .kconfig import edit_config, edit_config_check_deps
+from .kconfig import kconfig_edit, kconfig_check_with_deps, kconfig_debug_check
 from .kconfig import kconfig_more_syscalls, kconfig_debugging
 from .kconfig import kconfig_compatibility, kconfig_syscall_deps
 from .location import extract_syscall_locations
@@ -625,6 +625,28 @@ class Kernel:
 
 		atexit.unregister(self.__restore_makefile)
 
+	def __edit_config(self, options: Iterable[str]):
+		if not options:
+			return
+
+		# TODO: this is annoying, can we find a better way to do it?
+		#   make olddefconfig only works with the .config file in the source
+		#   tree, so can't move the "sync config" functionality out of here...
+		config_file = (self.outdir or self.kdir) / '.config'
+		kconfig_edit(config_file, self.kdir, options)
+		self.sync_config()
+		kconfig_debug_check(config_file, self.kdir, options)
+
+	def __edit_config_with_deps(self, options: Dict[str,List[str]]):
+		if not options:
+			return
+
+		# TODO: ditto (see above)
+		config_file = (self.outdir or self.kdir) / '.config'
+		kconfig_edit(config_file, self.kdir, options)
+		self.sync_config()
+		kconfig_check_with_deps(config_file, self.kdir, options)
+
 	def make(self, target: str, stdin=None, ensure=True) -> int:
 		j = max(len(sched_getaffinity(0)) - 1, 1)
 		cmd = ['make', f'-j{j}', f'ARCH={self.arch.name}']
@@ -667,7 +689,6 @@ class Kernel:
 		self.make('distclean')
 
 	def configure(self):
-		config_file = (self.outdir or self.kdir) / '.config'
 		self.__version = None
 
 		logging.info('Configuring for Arch: %r', self.arch)
@@ -676,26 +697,17 @@ class Kernel:
 		for target in self.arch.config_targets:
 			self.make(target)
 
-		# TODO: maybe create a check that ensures these are actually applied and
-		# consistent? E.G. check if all the configs that are supposed to exist
-		# in a version actually exist when running the tool and keep the wanted
-		# value after `make olddefconfig`.
-
 		logging.info('Applying debugging configs')
-		edit_config(self.kdir, config_file, kconfig_debugging(self.version))
-		self.sync_config()
+		self.__edit_config(kconfig_debugging(self.version))
 
 		logging.info('Applying compatibility configs')
-		edit_config(self.kdir, config_file, kconfig_compatibility(self.version))
-		self.sync_config()
+		self.__edit_config(kconfig_compatibility(self.version))
 
 		logging.info('Enabling more syscalls')
-		edit_config_check_deps(self.kdir, config_file, kconfig_more_syscalls(self.version))
-		self.sync_config()
+		self.__edit_config_with_deps(kconfig_more_syscalls(self.version))
 
 		logging.info('Applying arch-specific configs')
-		edit_config_check_deps(self.kdir, config_file, self.arch.kconfig[self.version])
-		self.sync_config()
+		self.__edit_config_with_deps(self.arch.kconfig[self.version])
 
 	def build(self, try_disable_opt: bool = False) -> float:
 		start = monotonic()
