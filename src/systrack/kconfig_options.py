@@ -307,6 +307,7 @@ KCONFIG_SYSCALL_DEPS = VersionedDict((
 	(VERSION_ZERO, VERSION_INF, 'set_mempolicy_home_node', 'NUMA'               ),
 	(VERSION_ZERO, VERSION_INF, 'pciconfig_read'         , 'PCI'                ),
 	(VERSION_ZERO, VERSION_INF, 'pciconfig_write'        , 'PCI'                ),
+	(VERSION_ZERO, VERSION_INF, 'pciconfig_iobase'       , 'PCI'                ),
 	(VERSION_ZERO, VERSION_INF, 'perf_event_open'        , 'PERF_EVENTS'        ),
 	(VERSION_ZERO, VERSION_INF, 'mq_notify'              , 'POSIX_MQUEUE'       ),
 	(VERSION_ZERO, VERSION_INF, 'mq_open'                , 'POSIX_MQUEUE'       ),
