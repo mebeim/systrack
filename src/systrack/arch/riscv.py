@@ -14,11 +14,11 @@ class ArchRiscV(Arch):
 
 	kconfig = VersionedDict((
 		# kexec_load
-		((5,13), VERSION_INF, 'KEXEC=y'     , ['MMU=y']),
+		((5,13), VERSION_INF, 'KEXEC=y', ['MMU=y']),
 		# seccomp
-		((5,5) , (5,10)     , 'SECCOMP=y'   , []),
-		# mbind, migrate_pages, {get,set}_mempolicy
-		((5,12), VERSION_INF, 'NUMA=y'      , ['SMP=y', 'MMU=y']),
+		((5,5) , (5,10)     , 'SECCOMP=y', []),
+		# mbind, {migrate.move}_pages, {get,set}_mempolicy
+		((5,12), VERSION_INF, 'NUMA=y', ['SMP=y', 'MMU=y']),
 	))
 
 	def __init__(self, kernel_version: KernelVersion, abi: str, bits32: bool=False):
@@ -44,12 +44,12 @@ class ArchRiscV(Arch):
 				self.config_targets = ('defconfig',)
 
 			# No "easy" make target for 32-bit before 5.1. Need manual config.
-			self.kconfig.add((4,15), (5,1), '32BIT=y', [])
-			self.kconfig.add((4,15), (5,1), '64BIT=n', [])
-			self.kconfig.add((4,15), (5,1), 'ARCH_RV32I=y', [])
-			self.kconfig.add((4,15), (5,1), 'ARCH_RV64I=n', [])
-			self.kconfig.add((4,15), (5,1), 'CPU_SUPPORTS_32BIT_KERNEL=y', [])
-			self.kconfig.add((4,15), (5,1), 'CPU_SUPPORTS_64BIT_KERNEL=n', [])
+			self.kconfig.add((4,15), (5,1) , '32BIT=y', [])
+			self.kconfig.add((4,15), (5,1) , '64BIT=n', [])
+			self.kconfig.add((4,15), (5,1) , 'ARCH_RV32I=y', [])
+			self.kconfig.add((4,15), (5,1) , 'ARCH_RV64I=n', [])
+			self.kconfig.add((4,15), (4,18), 'CPU_SUPPORTS_32BIT_KERNEL=y', [])
+			self.kconfig.add((4,15), (4,18), 'CPU_SUPPORTS_64BIT_KERNEL=n', [])
 		else:
 			self.config_targets = ('defconfig',)
 
