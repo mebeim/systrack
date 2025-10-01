@@ -170,7 +170,7 @@ KCONFIG_MORE_SYSCALLS = VersionedDict((
 	((2,6,16)    , (4,1)      , 'UID16=y'              , ['EXPERT=y', 'HAVE_UID16=y']),
 	((4,1)       , VERSION_INF, 'UID16=y'              , ['EXPERT=y', 'HAVE_UID16=y', 'MULTIUSER=y']),
 	((4,3)       , VERSION_INF, 'USERFAULTFD=y'        , ['MMU=y']),
-	((3,15)      , VERSION_INF, 'USELIB=y'             , []),
+	((3,15)      , (6,16)     , 'USELIB=y'             , []),
 ))
 
 # Keep track of which syscall depends on which config option. Since syscalls are
