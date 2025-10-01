@@ -80,7 +80,7 @@ KCONFIG_COMPATIBILITY = VersionedList((
 	(VERSION_ZERO, VERSION_INF, ['USB=n']),
 	(VERSION_ZERO, (6,6)      , ['EMBEDDED=n']),
 	((2,6,28)    , VERSION_INF, ['WIRELESS=n']),
-	((2,6,32)    , VERSION_INF, ['WLAN=n', 'NETDEVICES=n']),
+	((2,6,32)    , VERSION_INF, ['USB_SUPPORT=n', 'WLAN=n', 'NETDEVICES=n']),
 	((2,6,36)    , VERSION_INF, ['SECURITY_APPARMOR=n']),
 	((3,7)       , VERSION_INF, ['MODULE_SIG=n']),
 	((3,13)      , VERSION_INF, ['SYSTEM_TRUSTED_KEYRING=n']),
