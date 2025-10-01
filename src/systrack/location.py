@@ -173,7 +173,10 @@ def good_location(file: Path, line: int, arch: Arch, sc: Syscall) -> bool:
 	return good_definition(arch, definition, sc.origname) \
 		or good_definition(arch, definition, sc.name)
 
-def adjust_line(file: Path, line: int) -> int:
+def adjust_line(file: Path, line: int, sc: Syscall) -> int:
+	'''Adjust the given line number by looking for the start (signature) of a
+	function. The sc argument is only used for error logging prposes.
+	'''
 	try:
 		with file.open('rb') as f:
 			lines = f.readlines()
@@ -184,6 +187,7 @@ def adjust_line(file: Path, line: int) -> int:
 		# make or git we have no good way of knowing what's the version for the
 		# source code we are inspecting, and we will only realize something's
 		# wrong if we encounter a missing file or a file that is too short.
+		logging.critical('Broken location info for %r', sc)
 		logging.critical('File "%s" does not exist!', file)
 		logging.critical('Do you have the correct source code version for this kernel?')
 		sys.exit(1)
@@ -198,7 +202,9 @@ def adjust_line(file: Path, line: int) -> int:
 		except IndexError:
 			# This will happen if we mismatch vmlinux and kernel sources. Same
 			# reasoning as above applies.
-			logging.critical('File "%s" does not have enough lines of code!', file)
+			logging.critical('Broken location info for %r', sc)
+			logging.critical('File "%s" does not have enough lines of code: '
+				'expected %d+, have %d!', file, line, len(lines))
 			logging.critical('Do you have the correct source code version for this kernel?')
 			sys.exit(1)
 
@@ -256,9 +262,9 @@ def extract_syscall_locations(syscalls: List[Syscall], vmlinux: ELF, arch: Arch,
 
 	rel = lambda p: maybe_rel(p, kdir)
 	bad_paths = False
-	to_adjust = []
-	to_retry = []
-	to_grep = []
+	to_adjust: List[Syscall] = []
+	to_retry: List[Syscall] = []
+	to_grep: List[Syscall] = []
 
 	if rdir:
 		remap = lambda p: kdir / maybe_rel(p, rdir) if p is not None else None
@@ -287,7 +293,7 @@ def extract_syscall_locations(syscalls: List[Syscall], vmlinux: ELF, arch: Arch,
 		if not file.is_relative_to(kdir.resolve()):
 			bad_paths = True
 
-		sc.line = line = adjust_line(file, line)
+		sc.line = line = adjust_line(file, line, sc)
 
 		# For esoteric syscalls, only find a decent location for the symbol,
 		# it's pointless to go deeper
@@ -352,7 +358,7 @@ def extract_syscall_locations(syscalls: List[Syscall], vmlinux: ELF, arch: Arch,
 						sc.symbol.size - 1, *loc)
 				continue
 
-			line = adjust_line(file, line)
+			line = adjust_line(file, line, sc)
 
 			if good_location(file, line, arch, sc):
 				sc.file = file
@@ -391,7 +397,7 @@ def extract_syscall_locations(syscalls: List[Syscall], vmlinux: ELF, arch: Arch,
 				continue
 
 			invalid = False
-			line = adjust_line(file, int(line))
+			line = adjust_line(file, int(line), sc)
 
 			if good_location(file, line, arch, sc):
 				sc.file = file
