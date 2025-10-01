@@ -660,8 +660,8 @@ class Kernel:
 		if self.outdir:
 			cmd.append(f'O={self.outdir}')
 
-		# Tools are compiled with -Werror by default. 5.15+ has CONFIG_WERROR,
-		# which we set =n, but older kernels accept WERROR=.
+		# 5.15+ has CONFIG_WERROR, which we set =n, but older kernels seem to
+		# accept WERROR=X.
 		if self.version < (5,15):
 			cmd.append('WERROR=0')
 
