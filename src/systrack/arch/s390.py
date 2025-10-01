@@ -5,7 +5,7 @@ from typing import Tuple, List, Optional, Dict
 from ..elf import Symbol, ELF, E_MACHINE
 from ..kconfig_options import VERSION_INF
 from ..type_hints import KernelVersion
-from ..utils import VersionedDict, noprefix
+from ..utils import VersionedDict, anysuffix, noprefix
 
 from .arch_base import Arch
 
@@ -78,9 +78,22 @@ class ArchS390(Arch):
 		return sym_name
 
 	def _normalize_syscall_name(self, name: str) -> str:
-		# E.g. COMPAT_SYSCALL_DEFINE1(s390_mmap2, ...)
-		# E.g. SYSCALL_DEFINE1(s390_personality, ...)
-		return noprefix(name, 's390_')
+		# Unlike most other archs where there is an arch-specific prefix for a
+		# significant number of (or nearly all) syscalls, in S390 this prefix
+		# is actually part of the syscall name for some arch-specific syscalls.
+		# Use a whitelist approach instead of blindly stripping it. These
+		# syscalls are also named using the prefix in man section 2.
+		known = {
+			's390_guarded_storage',
+			's390_pci_mmio_read',
+			's390_pci_mmio_write',
+			's390_runtime_instr',
+			's390_sthyi',
+		}
+
+		if name.startswith('s390_') and name not in known:
+			return noprefix(name, 's390_')
+		return name
 
 	def have_syscall_table(self) -> bool:
 		return False
