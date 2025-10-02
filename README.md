@@ -174,6 +174,11 @@ Limitations
   if the kernel is relocatable the syscall table is relocated at startup and
   does not contain valid virtual addresses: Systrack will currently fail to
   analyze such kernels.
+- Building kernels: when building kernels fot you, Systrack does not aim at
+  building usable or sane kernel images. In fact, a lot of unneeded features are
+  disabled at build time (e.g., USB support). The goal is only to correctly
+  include all syscalls in the syscall table for later extraction.
+  *Do not run kernels built with Systrack.*
 
 
 Command line help
