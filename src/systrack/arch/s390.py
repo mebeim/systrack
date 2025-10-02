@@ -5,7 +5,7 @@ from typing import Tuple, List, Optional, Dict
 from ..elf import Symbol, ELF, E_MACHINE
 from ..kconfig_options import VERSION_INF
 from ..type_hints import KernelVersion
-from ..utils import VersionedDict, anysuffix, noprefix
+from ..utils import VersionedDict, noprefix
 
 from .arch_base import Arch
 
@@ -96,12 +96,17 @@ class ArchS390(Arch):
 		return name
 
 	def have_syscall_table(self) -> bool:
+		# FIXME: This is not true, we do have a table, it just requires custom
+		# parsing. Move parsing logic in Arch class?
 		return False
 
 	def extract_syscall_vaddrs(self, vmlinux: ELF) -> Dict[int, int]:
 		symbol = vmlinux.symbols[self.syscall_table_name]
 		size = symbol.size
 		if size == 0:
+			# FIXME: In case of 32-bit (abi=='s390') we calculate the size of
+			# sys_call_table, but then look at sys_call_table_emu. Can we do any
+			# better?
 			# sys_call_table_emu immediately follows sys_call_table.
 			# See arch/s390/kernel/entry.S.
 			size = (vmlinux.symbols['sys_call_table_emu'].vaddr -
