@@ -19,6 +19,8 @@ class ArchS390(Arch):
 	syscall_arg_regs   = ('r2', 'r3', 'r4', 'r5', 'r6', 'r7')
 
 	kconfig = VersionedDict((
+		# TODO: validate and see which ones of these (if any) may make sense to
+		# move in global kconfig options.
 		# 32-bit abi
 		((2,6,12), VERSION_INF, 'COMPAT=y', []),
 		# error: invalid hard register usage between output operands
@@ -31,7 +33,7 @@ class ArchS390(Arch):
 		# misaligned symbol `__nospec_call_start'
 		((4,16), VERSION_INF, 'EXPOLINE=n', []),
 		# load BTF from vmlinux: Invalid argument
-		((5,16), (6,0), 'CONFIG_DEBUG_INFO_BTF=n', []),
+		((5,16), (6,0), 'DEBUG_INFO_BTF=n', []),
 	))
 
 	def __init__(self, kernel_version: KernelVersion, abi: str, bits32: bool = False):
