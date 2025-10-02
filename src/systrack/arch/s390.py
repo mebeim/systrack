@@ -9,9 +9,6 @@ from ..utils import VersionedDict, noprefix
 
 from .arch_base import Arch
 
-def is_localalias(name):
-	return re.search(r'\.localalias\.\d+$', name) is not None
-
 class ArchS390(Arch):
 	name               = 's390'
 	syscall_table_name = 'sys_call_table'
