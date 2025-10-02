@@ -2,6 +2,44 @@ Systrack changelog
 ==================
 
 
+v0.8
+----
+
+New arch support: IBM Z-Architecture S390 64-bit and compat 32-bit, tested on
+v4.0+ kernels. Thanks to Ilya Leoshkevich ([@iii-i](https://github.com/iii-i))
+for the initial implementation (#3).
+
+**Improvements**:
+
+- Produce lighter builds (hopefully) stripping apparmor and USB support as they
+  do not affect syscalls.
+- Reduce possibility of build errors disabling `-Werror` where possible.
+- Detect and deprioritize symbols coming from interprocedural optimization
+  (`xxx.localalias`) implemented in recent compiler versions for more precise
+  syscall symbol and name detection.
+- Improve Kconfig parsing, sanity checks and warnings about Kconfig options.
+- arm64: new arch-specific dummy syscall implementation detection helper.
+
+**Bug fixes**:
+
+- Fix internal `Versioned{Dict,List}` caching implementation, used for Kconfig
+  options mostly.
+- Fix command formatting in debug logs, which should be now correctly
+  copy-pasteable into a shell as is.
+- arm64: fix broken pkey syscalls detection. Implemented in v6.12 under
+  `ARM64_POE` config, but was wrongly detected as present on earlier kernels.
+- powerpc, riscv: fix some imprecise/incorrect Kconfig option versioning and
+  dependenceis.
+
+**Internal changes**:
+
+- Move kconfig parsing logic into own `Kconfig` class.
+- Improve `Kernel` exception semantics: throw exceptions at analysis time
+  instead of causing program exit.
+- Improve `Arch` subclass method overrides and implement unit test to perform
+  sanity checks around abstract methods.
+
+
 v0.7
 ----
 
